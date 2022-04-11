@@ -25,9 +25,9 @@ source-repository head
 common common-options
   build-depends:       base ^>= 4.15,
                        protolude == 0.2.4,
-                       cryptonite == 0.30,
-                       memory == 0.17.0,
-                       bytestring == 0.11.3.0,
+                       cryptonite == 0.29,
+                       memory == 0.16.0,
+                       bytestring == 0.10.12.1,
                        text == 1.2.5.0,
                        template-haskell == 2.17.0.0
 
