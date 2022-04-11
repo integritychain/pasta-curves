@@ -4,4 +4,6 @@ import PastaCurves (projectName)
 
 
 main :: IO ()
-main = putStrLn ("Benchmarks for " ++ projectName)
+main = do
+         print "Benchmarks for "
+         print projectName

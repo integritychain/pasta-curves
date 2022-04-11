@@ -1,7 +1,13 @@
+{-# LANGUAGE OverloadedStrings, NoImplicitPrelude #-}
+
+
 module Main (main) where
 
 import PastaCurves (projectName)
+import Protolude
 
 
 main :: IO ()
-main = putStrLn ("Executable for " ++ projectName)
+main = do
+         print ("Executable for " :: Text)
+         print projectName
