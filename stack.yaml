@@ -1,1 +1,4 @@
 resolver: nightly-2022-01-10
+
+extra-deps:
+- protolude-0.2.4@sha256:ec6c01be631050f8c1b9153a782d329a52609d058cb4b461104222862f7792af,2292

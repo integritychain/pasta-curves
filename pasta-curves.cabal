@@ -78,7 +78,7 @@ test-suite pasta-curves-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test, src/Crypto/ECC
   main-is:             Spec.hs
-  other-modules:       TestFields
+  other-modules:       PastaCurves, TestFields
   build-depends:       pasta-curves,
                        tasty,
                        tasty-hunit,
@@ -90,7 +90,7 @@ test-suite pasta-curves-test
 benchmark pasta-curves-benchmark
   import:              common-options
   type:                exitcode-stdio-1.0
-  hs-source-dirs:      benchmark, src/Crypto/ECC
+  hs-source-dirs:      PastaCurves, benchmark, src/Crypto/ECC
   main-is:             Main.hs
   build-depends:       pasta-curves
   ghc-options:         -threaded
