@@ -6,16 +6,16 @@
 --{-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Trustworthy, DerivingStrategies #-}
 
-module Curves (Curve(pointMul), CurvePt(pointAdd, base, neutral), Vesta, Pallas, Fq, Fp) where
+module Curves (Curve(pointMul), CurvePt(pointAdd, base, neutral, isOnCurve, toAffine, toProjective, negatePt), Vesta, Pallas, Fq, Fp) where
 
 import Protolude
 import Fields qualified as F
 import Constants qualified as C
 
 data Point a = Projective {_px :: a, _py :: a, _pz :: a} -- (x/z, y/z)
-               | Affine {_ax :: a, _ay :: a} deriving (Show)
+               | Affine {_ax :: a, _ay :: a} deriving stock (Show)
 
 instance (F.Field a, Eq a) => Eq (Point a) where
   (==) (Affine x1 y1) (Affine x2 y2) = (x1 == x2) && (y1 == y2)
@@ -23,8 +23,8 @@ instance (F.Field a, Eq a) => Eq (Point a) where
 
 type Fp = $(F.primeField C.pallasPrime)
 type Fq = $(F.primeField C.vestaPrime)
-newtype Pallas = Pallas (Point Fp) deriving (Show, Eq)
-newtype Vesta  = Vesta  (Point Fq) deriving (Show, Eq)
+newtype Pallas = Pallas (Point Fp) deriving stock (Show, Eq)
+newtype Vesta  = Vesta  (Point Fq) deriving stock (Show, Eq)
 
 
 class CurvePt a where
