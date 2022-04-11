@@ -1,6 +1,9 @@
 {-# LANGUAGE Safe #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Constants (pallasPrime, vestaPrime) where
+
+import Protolude
 
 -- | pallas field modulus https://neuromancer.sk/std/other/Pallas
 pallasPrime :: Integer

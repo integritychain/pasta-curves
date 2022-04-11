@@ -1,6 +1,8 @@
-{-# LANGUAGE DataKinds, FlexibleInstances, OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE DataKinds, FlexibleInstances, OverloadedStrings, TemplateHaskell, NoImplicitPrelude #-}
 
 module TestFields (fieldProps, testH2Fp) where
+
+import Protolude
 
 import qualified Test.Tasty as TT
 import qualified Test.Tasty.HUnit as TTHU
