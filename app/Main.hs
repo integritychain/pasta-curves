@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings, NoImplicitPrelude #-}
-
+{-# LANGUAGE OverloadedStrings, NoImplicitPrelude, Safe #-}
 
 module Main (main) where
 
