@@ -7,12 +7,12 @@ See README for more info
 -}
 {-# LANGUAGE AllowAmbiguousTypes, DataKinds, KindSignatures  #-}
 {-# LANGUAGE NoImplicitPrelude, OverloadedStrings, ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell, CPP #-}
+{-# LANGUAGE TemplateHaskell, Trustworthy, CPP #-}
 {-# OPTIONS_GHC -Wall #-}
 
 
 module PastaCurves
-    ( projectName, a, b, c
+    ( projectName, a, b, c, main11
     ) where
 
 import Protolude hiding (sqrt)

@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, FlexibleInstances, OverloadedStrings, TemplateHaskell, NoImplicitPrelude #-}
+{-# LANGUAGE DataKinds, FlexibleInstances, OverloadedStrings, TemplateHaskell, Trustworthy, NoImplicitPrelude #-}
 
 module TestFields (fieldProps, testH2Fp) where
 
