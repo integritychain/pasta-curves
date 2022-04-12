@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, Trustworthy #-}
+{-# LANGUAGE NoImplicitPrelude, Safe #-}
 
 module Main (main) where
 
