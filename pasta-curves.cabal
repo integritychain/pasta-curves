@@ -1,22 +1,22 @@
-cabal-version:       3.0
-name:                pasta-curves
-version:             0.0.0.0
-synopsis:            See README for more info
+cabal-version:         3.0
+name:                  pasta-curves
+version:               0.0.0.0
+synopsis:              See README for more info
 description:
     See README for more info.
     See [README.md](https://github.com/eschorn@integritychain.com/pasta-curves#pasta-curves) for more details.
-homepage:            https://github.com/eschorn@integritychain.com/pasta-curves
-bug-reports:         https://github.com/eschorn@integritychain.com/pasta-curves/issues
-license:             MIT
-license-file:        LICENSE
-author:              Eric Schorn
-maintainer:          Eric Schorn <eschorn@integritychain.com>
-copyright:           2022 Eric Schorn
-category:            Cryptography, Elliptic Curves
-build-type:          Simple
-extra-doc-files:     README.md
-                     CHANGELOG.md
-tested-with:         GHC == 9.0.2
+homepage:              https://github.com/eschorn@integritychain.com/pasta-curves
+bug-reports:           https://github.com/eschorn@integritychain.com/pasta-curves/issues
+license:               MIT
+license-file:          LICENSE
+author:                Eric Schorn
+maintainer:            Eric Schorn <eschorn@integritychain.com>
+copyright:             2022 Eric Schorn
+category:              Cryptography, Elliptic Curves
+build-type:            Simple
+extra-doc-files:       README.md
+                       CHANGELOG.md
+tested-with:           GHC == 9.0.2
 
 source-repository head
   type:                git
@@ -35,26 +35,6 @@ common common-options
                        -Wno-missing-import-lists
                        -Wno-unsafe
                        -Wno-all-missed-specialisations
-                       
---  ghc-options:         -Wall
---                       -Wcompat
---                       -Widentities
---                       -Wincomplete-uni-patterns
---                       -Wincomplete-record-updates
---                       -Wredundant-constraints
---                       -Wnoncanonical-monad-instances
---  if impl(ghc >= 8.2)
---    ghc-options:       -fhide-source-paths
---  if impl(ghc >= 8.4)
---    ghc-options:       -Wmissing-export-lists
---                       -Wpartial-fields
---  if impl(ghc >= 8.8)
---    ghc-options:       -Wmissing-deriving-strategies
---                       -fwrite-ide-info
---                       -hiedir=.hie
---  if impl(ghc >= 8.10)
---    ghc-options:       -Wunused-packages
-
   default-language:    Haskell2010
 
 library
@@ -77,7 +57,7 @@ test-suite pasta-curves-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test, src/Crypto/ECC
   main-is:             Spec.hs
-  other-modules:       PastaCurves, TestFields
+  other-modules:       PastaCurves, TestFields, TestCurves
   build-depends:       pasta-curves,
                        base,
                        tasty,
