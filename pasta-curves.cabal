@@ -23,12 +23,18 @@ source-repository head
   location:            https://github.com/eschorn@integritychain.com/pasta-curves.git
 
 common common-options
-  build-depends:       protolude == 0.2.4,
-                       cryptonite == 0.29,
-                       memory == 0.16.0,
-                       bytestring == 0.10.12.1,
-                       text == 1.2.5.0,
-                       template-haskell == 2.17.0.0
+  build-depends:       protolude,
+                       cryptonite,
+                       memory,
+                       bytestring,
+                       text,
+                       template-haskell
+  -- build-depends:       protolude == 0.2.4,
+  --                      cryptonite == 0.29,
+  --                      memory == 0.16.0,
+  --                      bytestring == 0.10.12.1,
+  --                      text == 1.2.5.0,
+  --                      template-haskell == 2.17.0.0
   other-modules:       Fields, Curves, Constants
 
   ghc-options:         -Weverything
