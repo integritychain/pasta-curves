@@ -1,12 +1,12 @@
-{-# LANGUAGE OverloadedStrings, NoImplicitPrelude, Safe #-}
+{-# LANGUAGE ImportQualifiedPost, NoImplicitPrelude, OverloadedStrings, Safe #-}
 
 module Main (main) where
 
-import PastaCurves (projectName)
 import Protolude
+import PastaCurves qualified as PC
 
 
 main :: IO ()
 main = do
-         print ("Executable for " :: Text)
-         print projectName
+  print ("Executable for " :: Text)
+  print PC.projectName

@@ -14,10 +14,10 @@ serialization and deserialization, and hash2Field. The algorithms are not
 constant time.
 -}
 
-{-# LANGUAGE AllowAmbiguousTypes, DataKinds, KindSignatures  #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell, CPP, Trustworthy, ImportQualifiedPost, DerivingStrategies #-}
-{-# OPTIONS_GHC -Weverything -Wno-missing-import-lists -Wno-unsafe -Wno-all-missed-specialisations #-}
+{-# LANGUAGE CPP, DataKinds, DerivingStrategies, ImportQualifiedPost #-}
+{-# LANGUAGE KindSignatures, NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
+-- {-# OPTIONS_GHC -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-unsafe #-}
 
 module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sqrt, 
                toBytes, toI), primeField) where

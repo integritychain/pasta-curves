@@ -5,12 +5,11 @@ module TestFields (fieldProps, testH2Fp) where
 
 import Protolude
 
+import Data.ByteString qualified as DBS
+import Data.Maybe qualified as DM
 import Test.Tasty qualified as TT
 import Test.Tasty.HUnit qualified as TTHU
 import Test.Tasty.QuickCheck qualified as TTQC
-import Data.ByteString qualified as DBS
-import Data.Maybe qualified as DM
-import Control.Monad qualified as CM
 
 import Fields qualified as F
 import Constants qualified as C
@@ -31,7 +30,7 @@ instance TTQC.Arbitrary Fq where  --   $(F.primeField C.vestaPrime) where
 type Serdes = DBS.ByteString
 
 instance TTQC.Arbitrary Serdes where
-  arbitrary = DBS.pack <$> CM.replicateM 32 TTQC.arbitrary
+  arbitrary = DBS.pack <$> replicateM 32 TTQC.arbitrary
 
 
 fieldProps :: TT.TestTree

@@ -1,14 +1,10 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DataKinds, KindSignatures  #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell, CPP, ImportQualifiedPost #-}
---{-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE Trustworthy, DerivingStrategies #-}
+{-# LANGUAGE DataKinds, DerivingStrategies, FlexibleInstances, ImportQualifiedPost #-}
+{-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell, Trustworthy #-}
+-- {-# OPTIONS_GHC -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-unsafe #-}
 
-module Curves (Curve(pointMul), CurvePt(pointAdd, base, neutral, isOnCurve, toAffine, toProjective, negatePt), Vesta, Pallas, Fq, Fp) where
+module Curves (CurvePt(base, isOnCurve, negatePt, neutral, pointAdd, toAffine, toProjective), 
+               Curve(pointMul), Fp, Fq, Pallas, Vesta) where
 
 import Protolude
 import Fields qualified as F
@@ -28,32 +24,33 @@ newtype Vesta  = Vesta  (Point Fq) deriving stock (Show, Eq)
 
 
 class CurvePt a where
-  neutral :: a
   base :: a
-  pointAdd :: a -> a -> a
   isOnCurve :: a -> Bool
+  negatePt :: a -> a
+  neutral :: a
+  pointAdd :: a -> a -> a
   toAffine :: a -> a
   toProjective :: a -> a
-  negatePt :: a -> a
+
 
 instance CurvePt Pallas where
-  neutral = Pallas $ Projective 0 1 0
   base = Pallas $ Projective 1 0x248b4a5cf5ed6c83ac20560f9c8711ab92e13d27d60fb1aa7f5db6c93512d546 1
-  pointAdd (Pallas p1) (Pallas p2) = Pallas $ _pointAdd p1 p2 0 15
   isOnCurve (Pallas p) = _isOnCurve p 0 5 -- (b3 / 3)
+  negatePt (Pallas a) = Pallas $ _negatePt a
+  neutral = Pallas $ Projective 0 1 0
+  pointAdd (Pallas p1) (Pallas p2) = Pallas $ _pointAdd p1 p2 0 15
   toAffine (Pallas a) = Pallas $ _toAffine a
   toProjective (Pallas a) = Pallas $ _toProjective a
-  negatePt (Pallas a) = Pallas $ _negatePt a
 
 
 instance CurvePt Vesta where
-  neutral = Vesta $ Projective 0 1 0
   base = Vesta $ Projective  1 0x26bc999156dd5194ec49b1c551768ab375785e7ce00906d13e0361674fd8959f 1
-  toAffine (Vesta a) = Vesta $ _toAffine a
-  toProjective (Vesta a) = Vesta $ _toProjective a
-  pointAdd (Vesta p1) (Vesta p2) = Vesta $ _pointAdd p1 p2 0 15 :: Vesta
   isOnCurve _ = False
   negatePt (Vesta a) = Vesta $ _negatePt a
+  neutral = Vesta $ Projective 0 1 0
+  pointAdd (Vesta p1) (Vesta p2) = Vesta $ _pointAdd p1 p2 0 15 :: Vesta
+  toAffine (Vesta a) = Vesta $ _toAffine a
+  toProjective (Vesta a) = Vesta $ _toProjective a
 
 
 class (CurvePt a, F.Field b) => Curve a b where
@@ -61,24 +58,27 @@ class (CurvePt a, F.Field b) => Curve a b where
 
 
 instance Curve Pallas Fq where
-  pointMul aa (Pallas p1) = Pallas $ _pointMul (F.toI aa) p1 (Projective 0 1 0) 0 15 -- (unwrap neutral) 0 15
+  pointMul aa (Pallas p1) = Pallas $ _pointMul (F.toI aa) p1 (Projective 0 1 0) 0 15
 
 
 instance Curve Vesta Fp where
-  pointMul aa (Vesta p1) = Vesta $ _pointMul (F.toI aa) p1 (Projective 0 1 0) 0 15 -- (unwrap neutral) 0 15
+  pointMul aa (Vesta p1) = Vesta $ _pointMul (F.toI aa) p1 (Projective 0 1 0) 0 15
 
 
 _toAffine :: F.Field a => Point a -> Point a
 _toAffine (Projective x1 y1 z1) = Affine (x1 * F.inv0 z1) (y1 * F.inv0 z1)
 _toAffine _ = panic "Affine -> affine not implemented"
 
+
 _isOnCurve :: (F.Field a, Eq a) => Point a -> a -> a -> Bool
 _isOnCurve (Projective x y z) a b = z*y^(2::Integer) == x^(3::Integer) + a*x*z^(2::Integer) + b*z^(3::Integer)
 _isOnCurve p a b = _isOnCurve (_toProjective p) a b
 
+
 _toProjective :: F.Field a => Point a -> Point a
 _toProjective (Affine x y) = Projective x y 1
 _toProjective _ = panic "Projective -> projective not implemented"
+
 
 -- See https://eprint.iacr.org/2015/1060.pdf page 8; The following has all the additions 'squashed out'
 -- Algorithm 1: Complete, projective point addition for arbitrary prime order short Weierstrass curves E/Fq : y^2 = x^3 + ax + b.
