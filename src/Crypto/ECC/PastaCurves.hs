@@ -7,7 +7,6 @@ See README for more info
 -}
 {-# LANGUAGE CPP, DataKinds, KindSignatures, ImportQualifiedPost, NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
--- {-# OPTIONS_GHC -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-unsafe #-}
 
 
 module PastaCurves

@@ -22,15 +22,15 @@ instance TTQC.Arbitrary Vesta where
 
 
 curveProps :: TT.TestTree
-curveProps = TT.testGroup "(checked by QuickCheck)" [
-  TTQC.testProperty "pallas point add/mul" $ 
+curveProps = TT.testGroup "Testing Curve properties via QuickCheck" [
+  TTQC.testProperty "Pallas point add/mul" $ 
     \a b -> pointAdd (pointMul (a :: Fq) (base :: Pallas)) (pointMul b base) == pointMul (a+b) base,
-  TTQC.testProperty "pallas point add symm" $
+  TTQC.testProperty "Pallas point add symm" $
     \a b -> pointAdd a b == pointAdd b (a :: Pallas),
 
-  TTQC.testProperty "vesta point add/mul" $ 
+  TTQC.testProperty "Vesta point add/mul" $ 
     \a b -> pointAdd (pointMul (a :: Fp) (base :: Vesta)) (pointMul b base) == pointMul (a+b) base,
-  TTQC.testProperty "vesta point add symm" $
+  TTQC.testProperty "Vesta point add symm" $
     \a b -> pointAdd a b == pointAdd b (a :: Vesta) 
 
   ]

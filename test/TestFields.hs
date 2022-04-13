@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds, FlexibleInstances, OverloadedStrings, TemplateHaskell, Trustworthy, ImportQualifiedPost, NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-orphans -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant bracket" #-}
 
 module TestFields (fieldProps, testH2Fp) where
 
@@ -34,17 +35,17 @@ instance TTQC.Arbitrary Serdes where
 
 
 fieldProps :: TT.TestTree
-fieldProps = TT.testGroup "(checked by QuickCheck)" [
-  TTQC.testProperty "pallas fe arith"  $ \a b c -> a*(b-c) - a*b + a*c == (0 :: Fp),
-  TTQC.testProperty "pallas fe inv0"   $ \a -> a * F.inv0 a == (1 :: Fp),
-  TTQC.testProperty "pallas fe sqrt"   $ \a -> DM.fromJust (F.sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer) :: Fp),
-  TTQC.testProperty "pallas fe serdes" $ \a -> DM.fromJust (F.fromBytes  (F.toBytes (F._fromBytes a ::
+fieldProps = TT.testGroup "Testing Field properties via QuickCheck" [
+  TTQC.testProperty "Fp arith"  $ \a b c -> a*(b-c) - a*b + a*c == (0 :: Fp),
+  TTQC.testProperty "Fp inv0"   $ \a -> a * F.inv0 a == (1 :: Fp),
+  TTQC.testProperty "Fp sqrt"   $ \a -> DM.fromJust (F.sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer) :: Fp),
+  TTQC.testProperty "Fp serdes" $ \a -> DM.fromJust (F.fromBytes  (F.toBytes (F._fromBytes a ::
        $(F.primeField C.pallasPrime)))) == (F._fromBytes a :: Fp),
 
-  TTQC.testProperty "vesta fe arith"   $ \a b c -> a*(b-c) - a*b + a*c == (0 :: Fq),
-  TTQC.testProperty "vesta fe inv0"    $ \a -> a * F.inv0 a == (1 :: Fq),
-  TTQC.testProperty "vesta fe sqrt"    $ \a -> DM.fromJust (F.sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer)  :: Fq),
-  TTQC.testProperty "vesta fe serdes"  $ \a -> DM.fromJust (F.fromBytes  (F.toBytes (F._fromBytes a ::
+  TTQC.testProperty "Fq arith"  $ \a b c -> a*(b-c) - a*b + a*c == (0 :: Fq),
+  TTQC.testProperty "Fq inv0"   $ \a -> a * F.inv0 a == (1 :: Fq),
+  TTQC.testProperty "Fq sqrt"   $ \a -> DM.fromJust (F.sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer)  :: Fq),
+  TTQC.testProperty "Fq serdes" $ \a -> DM.fromJust (F.fromBytes  (F.toBytes (F._fromBytes a ::
        $(F.primeField C.vestaPrime)))) == (F._fromBytes a :: Fq)
   ]
 

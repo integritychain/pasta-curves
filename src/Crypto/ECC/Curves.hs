@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds, DerivingStrategies, FlexibleInstances, ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell, Trustworthy #-}
--- {-# OPTIONS_GHC -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-unsafe #-}
 
 module Curves (CurvePt(base, isOnCurve, negatePt, neutral, pointAdd, toAffine, toProjective), 
                Curve(pointMul), Fp, Fq, Pallas, Vesta) where

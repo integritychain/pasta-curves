@@ -17,7 +17,6 @@ constant time.
 {-# LANGUAGE CPP, DataKinds, DerivingStrategies, ImportQualifiedPost #-}
 {-# LANGUAGE KindSignatures, NoImplicitPrelude, OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
--- {-# OPTIONS_GHC -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-unsafe #-}
 
 module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sqrt, 
                toBytes, toI), primeField) where
