@@ -18,7 +18,7 @@ constant time.
 {-# LANGUAGE KindSignatures, NoImplicitPrelude, OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
 
-module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sqrt, 
+module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sgn0, sqrt, 
                toBytes, toI), primeField) where
 
 import Protolude
@@ -96,6 +96,8 @@ class Num a => Field a where
   --   root.
   isSqr :: a -> Bool
 
+  sgn0 :: a -> Integer
+
   -- | The `Fields.sqrt` function implements the variable-time 
   --   Tonelli-Shanks algorithm to calculate the operand's square root. 
   --   The function returns `Nothing` in the event of a problem (such
@@ -142,6 +144,7 @@ instance KnownNat p => Field (Fp p) where
   -- isSqr :: a -> Bool
   isSqr (Fp a) = _isSqr a (MOD)
 
+  sgn0 (Fp a) = a `mod` 2
 
   -- Returns square root as Maybe field element. If problems, returns Nothing.
   -- sqrt :: a -> Maybe a

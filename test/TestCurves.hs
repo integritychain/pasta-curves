@@ -9,6 +9,7 @@ import Test.Tasty.QuickCheck qualified as TTQC
 
 import Curves
 import TestFields ()
+import Data.Maybe (fromJust)
 
 instance TTQC.Arbitrary Pallas where
   arbitrary = do
@@ -27,6 +28,10 @@ curveProps = TT.testGroup "Testing Curve properties via QuickCheck" [
     \a b -> pointAdd (pointMul (a :: Fq) (base :: Pallas)) (pointMul b base) == pointMul (a+b) base,
   TTQC.testProperty "Pallas point add symm" $
     \a b -> pointAdd a b == pointAdd b (a :: Pallas),
+
+  TTQC.testProperty "Pallas ser->deser" $
+    \a -> fromJust (fromBytes (toBytes a)) == (a :: Pallas),
+
 
   TTQC.testProperty "Vesta point add/mul" $ 
     \a b -> pointAdd (pointMul (a :: Fp) (base :: Vesta)) (pointMul b base) == pointMul (a+b) base,

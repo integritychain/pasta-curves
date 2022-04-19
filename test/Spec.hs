@@ -14,7 +14,7 @@ import PastaCurves (projectName)
 
 main :: IO ()
 main = do
-  SE.setEnv "TASTY_QUICKCHECK_TESTS" "200"
+  SE.setEnv "TASTY_QUICKCHECK_TESTS" "1_000"
   TT.defaultMain $ TT.testGroup "\nRunning Tests" [F.fieldProps, F.testH2Fp, C.curveProps]
   print projectName
 
