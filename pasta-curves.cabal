@@ -18,20 +18,26 @@ extra-doc-files:       README.md
                        CHANGELOG.md
 tested-with:           GHC == 8.10.6
                         || == 9.0.2
-                        || == 9.2.2
 
 source-repository head
   type:                git
   location:            https://github.com/eschorn@integritychain.com/pasta-curves.git
 
 common common-options
-  build-depends:       base == 4.15.1.0,
-                       protolude == 0.2.4,
-                       cryptonite == 0.29,
-                       memory == 0.16.0,
-                       bytestring == 0.10.12.1,
-                       text == 1.2.5.0,
-                       template-haskell == 2.17.0.0
+  build-depends:       base,
+-- == 4.15.1.0,
+                       protolude,
+-- == 0.2.4,
+                       cryptonite,
+-- == 0.29,
+                       memory,
+-- == 0.16.0,
+                       bytestring,
+-- == 0.10.12.1,
+                       text,
+-- == 1.2.5.0,
+                       template-haskell
+-- == 2.17.0.0
   other-modules:       Fields, Curves, Constants
 
   ghc-options:         -Weverything
