@@ -28,7 +28,6 @@ curveProps = TT.testGroup "Testing Curve properties via QuickCheck" [
     \a b -> pointAdd (pointMul (a :: Fq) (base :: Pallas)) (pointMul b base) == pointMul (a+b) base,
   TTQC.testProperty "Pallas point add symm" $
     \a b -> pointAdd a b == pointAdd b (a :: Pallas),
-
   TTQC.testProperty "Pallas ser->deser" $
     \a -> fromJust (fromBytes (toBytes a)) == (a :: Pallas),
 
@@ -36,7 +35,9 @@ curveProps = TT.testGroup "Testing Curve properties via QuickCheck" [
   TTQC.testProperty "Vesta point add/mul" $ 
     \a b -> pointAdd (pointMul (a :: Fp) (base :: Vesta)) (pointMul b base) == pointMul (a+b) base,
   TTQC.testProperty "Vesta point add symm" $
-    \a b -> pointAdd a b == pointAdd b (a :: Vesta) 
-
+    \a b -> pointAdd a b == pointAdd b (a :: Vesta),
+  TTQC.testProperty "Vesta ser->deser" $
+    \a -> fromJust (fromBytes (toBytes a)) == (a :: Vesta)
+ 
   ]
 

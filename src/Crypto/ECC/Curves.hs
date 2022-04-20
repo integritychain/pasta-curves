@@ -1,13 +1,13 @@
 {-# LANGUAGE DataKinds, DerivingStrategies, FlexibleInstances, ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell, Trustworthy #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Curves (CurvePt(base, fromBytes, isOnCurve, negatePt, neutral, pointAdd, toAffine, toBytes, toProjective),
                Curve(pointMul), Fp, Fq, Pallas, Vesta) where
 
 import Protolude
 import Data.ByteString qualified as DBS
-import Data.Maybe qualified as DM
 import Fields qualified as F
 import Constants qualified as C
 import Prelude (error)
@@ -66,42 +66,63 @@ class CurvePt a where
 
 instance CurvePt Pallas where
   base = Pallas $ Projective 1 0x248b4a5cf5ed6c83ac20560f9c8711ab92e13d27d60fb1aa7f5db6c93512d546 1
+  fromBytes b = Pallas <$> _fromBytes2 b 0
   isOnCurve (Pallas p) = _isOnCurve p 0 5 -- (b3 / 3)
   negatePt (Pallas a) = Pallas $ _negatePt a
   neutral = Pallas $ Projective 0 1 0
   pointAdd (Pallas p1) (Pallas p2) = Pallas $ _pointAdd p1 p2 0 15
   toAffine (Pallas a) = Pallas $ _toAffine a
+  toBytes (Pallas a) = _toBytes a
   toProjective (Pallas a) = Pallas $ _toProjective a
 
-  fromBytes b
+_fromBytes b
     | DBS.length b == 1 && DBS.index b 0 == 0 = Just neutral
     | DBS.length b == expectedB && (DBS.index b 0 == 0x2 || DBS.index b 0 == 0x03) = result
         where
-         expectedB = 1 + DBS.length (F.toBytes (0 :: Fp))
+         expectedB = 1 + DBS.length (F.toBytes (0 :: Fp)) --  :: Fp))
          x = F.fromBytes (DBS.drop 1 b) :: Maybe Fp
          lead = if DBS.index b 0 == 0x02 then 0 else 1 :: Integer
-         alpha = (\z -> z^(3 :: Int) + 0 * z + 5) <$> x :: Maybe Fp
-         beta = if isNothing alpha then Nothing else F.sqrt $ DM.fromJust alpha :: Maybe Fp -- more elegant way?
-         y_m =  (\z -> if F.sgn0 z == lead then z else negate z) <$> beta :: Maybe Fp  -- TODO: include 0x02/0x03, isOnCurve
-         result = (\z y -> Pallas $ Affine z y) <$> x <*> y_m :: Maybe Pallas
-  fromBytes _ = Nothing
+         alpha = (\z -> z^(3 :: Int) + 0 * z + 5) <$> x -- :: Maybe Fp
+         beta = alpha >>= F.sqrt -- :: Maybe Fp
+         y_m =  (\z -> if F.sgn0 z == lead then z else negate z) <$> beta -- :: Maybe Fp
+         result = (\z y -> Pallas $ Affine z y) <$> x <*> y_m :: Maybe Pallas -- isOnCurve by defn
+_fromBytes _ = Nothing
 
-  toBytes (Pallas PointAtInfinity) = DBS.pack [0]
-  toBytes (Pallas (Projective x y z)) = toBytes (toAffine (Pallas (Projective x y z)))
-  toBytes (Pallas (Affine x y))
-       | F.sgn0 y == 0 = DBS.cons 0x02 (F.toBytes x)
-       | F.sgn0 y == 1 = DBS.cons 0x03 (F.toBytes x)
-       | otherwise = panic "toBytes error should never happen"
+_fromBytes2 :: F.Field a => ByteString -> a -> Maybe (Point a)
+_fromBytes2 b zero0
+    | DBS.length b == 1 && DBS.index b 0 == 0 = Just PointAtInfinity -- neutral
+    | DBS.length b == expectedB && (DBS.index b 0 == 0x2 || DBS.index b 0 == 0x03) = result
+        where
+         expectedB = 1 + DBS.length (F.toBytes zero0) --  :: Fp))
+         x = fmap (+ zero0) $ F.fromBytes (DBS.drop 1 b) -- :: Maybe Fp
+         lead = if DBS.index b 0 == 0x02 then 0 else 1 :: Integer
+         alpha = (\z -> z^(3 :: Int) + 0 * z + 5) <$> x -- :: Maybe Fp
+         beta = alpha >>= F.sqrt -- :: Maybe Fp
+         y_m =  (\z -> if F.sgn0 z == lead then z else negate z) <$> beta -- :: Maybe Fp
+         result = Affine <$> x <*> y_m -- :: Maybe Pallas -- isOnCurve by defn
+_fromBytes2 _ _ = Nothing
+
+
+
+_toBytes :: F.Field a => Point a -> ByteString
+_toBytes PointAtInfinity = DBS.pack [0]
+_toBytes (Projective x y z) = _toBytes (_toAffine (Projective x y z))
+_toBytes (Affine x y)
+  | F.sgn0 y == 0 = DBS.cons 0x02 (F.toBytes x)
+  | F.sgn0 y == 1 = DBS.cons 0x03 (F.toBytes x)
+  | otherwise = panic "toBytes error should never happen"
 
 instance CurvePt Vesta where
   base = Vesta $ Projective  1 0x26bc999156dd5194ec49b1c551768ab375785e7ce00906d13e0361674fd8959f 1
-  fromBytes _ = panic "fromBytes not yet implemented"
+  -- fromBytes _ = panic "fromBytes not yet implemented"
+  fromBytes b = Vesta <$> _fromBytes2 b 0
   isOnCurve _ = False
   negatePt (Vesta a) = Vesta $ _negatePt a
   neutral = Vesta $ Projective 0 1 0
   pointAdd (Vesta p1) (Vesta p2) = Vesta $ _pointAdd p1 p2 0 15 :: Vesta
   toAffine (Vesta a) = Vesta $ _toAffine a
-  toBytes _ = panic "toBytes not yet implemented"
+  toBytes (Vesta a) = _toBytes a
+
   toProjective (Vesta a) = Vesta $ _toProjective a
 
 
