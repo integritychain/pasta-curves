@@ -5,6 +5,15 @@ Maintainer: Eric Schorn <eschorn@integritychain.com>
 
 See README for more info
 -}
+
+-- TODO
+--   0. Ensure serdes is correct
+--   1. Clean up existing code
+--   2. Ensure full test coverage
+--   3. Install test coverage reporting?
+
+
+
 {-# LANGUAGE CPP, DataKinds, KindSignatures, ImportQualifiedPost, NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
 

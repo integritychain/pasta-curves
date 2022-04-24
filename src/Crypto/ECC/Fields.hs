@@ -18,8 +18,8 @@ constant time.
 {-# LANGUAGE KindSignatures, NoImplicitPrelude, OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
 
-module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sgn0, sqrt, 
-               toBytes, toI), primeField) where
+module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sgn0, shiftR1,
+               sqrt, toBytes, toI), primeField) where
 
 import Protolude
 import Protolude.Base (show)
@@ -69,7 +69,7 @@ instance KnownNat p => Show (Fp p) where
 
 -- | The `Field` class provides useful support functionality for field 
 --   elements.
-class Num a => Field a where
+class (Num a, Eq a) => Field a where
 
   -- | The `fromBytes` function is the primary deserialization constructor
   --   which consumes a big-endian `ByteString` sized to minimally contain
@@ -97,6 +97,8 @@ class Num a => Field a where
   isSqr :: a -> Bool
 
   sgn0 :: a -> Integer
+
+  shiftR1 :: a -> a
 
   -- | The `Fields.sqrt` function implements the variable-time 
   --   Tonelli-Shanks algorithm to calculate the operand's square root. 
@@ -146,6 +148,8 @@ instance KnownNat p => Field (Fp p) where
 
   sgn0 (Fp a) = a `mod` 2
 
+  shiftR1 (Fp a) = Fp (a `div` 2)
+
   -- Returns square root as Maybe field element. If problems, returns Nothing.
   -- sqrt :: a -> Maybe a
   sqrt (Fp a) = fromInteger <$> _sqrtVt a (MOD) s p c
@@ -163,8 +167,10 @@ instance KnownNat p => Field (Fp p) where
       requiredB = (7 + until ((MOD <) . (2^)) (+1) 0) `div` 8 :: Integer
       res = [fromIntegral (shiftR a (8*b)) | b <- [0..(fromIntegral requiredB - 1)]] :: [Word8]
 
-  -- toInteger :: a -> Integer 
+
+  -- toI :: a -> Integer 
   toI (Fp a) = a
+
 
 -- Complex/common support functions operating on integers rather than field elements
 
