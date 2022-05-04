@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell, Trustworthy #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Curves (CurvePt(base, fromBytes, isOnCurve, negatePt, neutral, pointAdd, toAffine, toBytes, toProjective),
+module Curves (CurvePt(base, fromBytes, {-isOnCurve,-} negatePt, neutral, pointAdd, toAffine, toBytes, toProjective),
                Curve(pointMul), Fp, Fq, Pallas, Vesta) where
 
 import Protolude
@@ -22,7 +22,7 @@ instance (F.Field a) => Eq (Point a) where
   (==) PointAtInfinity PointAtInfinity = True
   (==) PointAtInfinity _ = False 
   (==) _ PointAtInfinity = False
-  (==) pt1 pt2 = _toAffine pt1 == _toAffine pt2
+  (==) pt1 pt2 = _toAffine pt1 == _toAffine pt2  -- one or more operand is projective
 
 
 type Fp = $(F.primeField C.pallasPrime)
@@ -34,7 +34,7 @@ newtype Vesta  = Vesta  (Point Fq) deriving stock (Show, Eq)
 class CurvePt a where
   base :: a
   fromBytes :: ByteString -> Maybe a
-  isOnCurve :: a -> Bool
+  -- isOnCurve :: a -> Bool
   negatePt :: a -> a
   neutral :: a
   pointAdd :: a -> a -> a
@@ -45,8 +45,8 @@ class CurvePt a where
 
 instance CurvePt Pallas where
   base = Pallas $ Projective 1 0x248b4a5cf5ed6c83ac20560f9c8711ab92e13d27d60fb1aa7f5db6c93512d546 1
-  fromBytes b = Pallas <$> _fromBytes2 b 0 5
-  isOnCurve (Pallas pt) = _isOnCurve pt 0 5
+  fromBytes b = Pallas <$> _fromBytes b 0 5
+  -- isOnCurve (Pallas pt) = _isOnCurve pt 0 5
   negatePt (Pallas pt) = Pallas $ _negatePt pt
   neutral = Pallas $ Projective 0 1 0
   pointAdd (Pallas pt1) (Pallas pt2) = Pallas $ _pointAdd pt1 pt2 0 15  -- b3=3*b
@@ -57,8 +57,8 @@ instance CurvePt Pallas where
 
 instance CurvePt Vesta where
   base = Vesta $ Projective  1 0x26bc999156dd5194ec49b1c551768ab375785e7ce00906d13e0361674fd8959f 1
-  fromBytes b = Vesta <$> _fromBytes2 b 0 5
-  isOnCurve (Vesta pt) = _isOnCurve pt 0 5
+  fromBytes b = Vesta <$> _fromBytes b 0 5
+  -- isOnCurve (Vesta pt) = _isOnCurve pt 0 5
   negatePt (Vesta pt) = Vesta $ _negatePt pt
   neutral = Vesta $ Projective 0 1 0
   pointAdd (Vesta pt1) (Vesta pt2) = Vesta $ _pointAdd pt1 pt2 0 15  -- b3=3*b
@@ -79,8 +79,8 @@ instance Curve Vesta Fp where
   pointMul s (Vesta pt) = Vesta $ _pointMul s pt (Projective 0 1 0) 0 15
 
 
-_fromBytes2 :: F.Field a => ByteString -> a -> a -> Maybe (Point a)
-_fromBytes2 bytes a b
+_fromBytes :: F.Field a => ByteString -> a -> a -> Maybe (Point a)
+_fromBytes bytes a b
     | DBS.length bytes == 1 && DBS.index bytes 0 == 0 = Just PointAtInfinity
     | DBS.length bytes == expLen && (DBS.index bytes 0 == 0x2 || DBS.index bytes 0 == 0x03) = result
         where
@@ -91,13 +91,13 @@ _fromBytes2 bytes a b
          beta = alpha >>= F.sqrt
          y =  (\t -> if F.sgn0 t == sgn0y then t else negate t) <$> beta
          result = Affine <$> x <*> y
-_fromBytes2 _ _ _ = Nothing
+_fromBytes _ _ _ = Nothing
 
 
-_isOnCurve :: (F.Field a) => Point a -> a -> a -> Bool
-_isOnCurve (Projective x y z) a b = z*y^(2::Integer) == x^(3::Integer) + a*x*z^(2::Integer) + b*z^(3::Integer)
-_isOnCurve (Affine x y) a b = y^(2::Integer) == x^(3::Integer) + a*x + b
-_isOnCurve PointAtInfinity _ _ = True
+-- _isOnCurve :: (F.Field a) => Point a -> a -> a -> Bool
+-- _isOnCurve (Projective x y z) a b = z*y^(2::Integer) == x^(3::Integer) + a*x*z^(2::Integer) + b*z^(3::Integer)
+-- _isOnCurve (Affine x y) a b = y^(2::Integer) == x^(3::Integer) + a*x + b
+-- _isOnCurve PointAtInfinity _ _ = True
 
 
 _negatePt :: (F.Field a) => Point a -> Point a
@@ -158,8 +158,7 @@ _toBytes PointAtInfinity = DBS.pack [0]
 _toBytes (Projective x y z) = _toBytes (_toAffine (Projective x y z))
 _toBytes (Affine x y)
   | F.sgn0 y == 0 = DBS.cons 0x02 (F.toBytes x)
-  | F.sgn0 y /= 0 = DBS.cons 0x03 (F.toBytes x)
-  | otherwise = panic "_toBytes pattern match fail (should never happen)"
+  | otherwise     = DBS.cons 0x03 (F.toBytes x)
 
 
 _toProjective :: F.Field a => Point a -> Point a
