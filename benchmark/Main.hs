@@ -2,11 +2,11 @@
 
 module Main (main) where
 
-import Protolude
+import Prelude
 import PastaCurves qualified as PC
 
 
 main :: IO ()
 main = do
-  print ("Benchmarks for " :: Text)
+  print ("Benchmarks for " :: String)
   print PC.projectName
