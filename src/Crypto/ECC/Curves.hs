@@ -1,15 +1,15 @@
-{-# LANGUAGE DataKinds, DerivingStrategies, FlexibleInstances, ImportQualifiedPost #-}
-{-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell, Trustworthy #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds, DerivingStrategies, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE NoImplicitPrelude, TemplateHaskell, Trustworthy #-}
 
-module Curves (CurvePt(base, fromBytes, {-isOnCurve,-} negatePt, neutral, pointAdd, toAffine, toBytes, toProjective),
-               Curve(pointMul), Fp, Fq, Pallas, Vesta) where
+module Curves (Curve(pointMul), CurvePt(base, fromBytes, negatePt, neutral, pointAdd, 
+  toAffine, toBytes, toProjective), Fp, Fq, Pallas, Vesta) where
 
-import Protolude
-import Data.ByteString qualified as DBS
-import Fields qualified as F
-import Constants qualified as C
+import Prelude(Applicative((<*>)), Bool(..), Eq(..), Integer, Maybe(..), Monad((>>=)), 
+  Num(..), Show, ($), (<$>), (^), (&&), (||), error, negate, otherwise)
+import Data.ByteString (ByteString, cons, drop, index, length, pack)
+
+import Fields (Field, fromBytes, inv0, primeField, shiftR1, sgn0, sqrt, toBytes)
+import Constants (pallasPrime, vestaPrime)
 
 
 data Point a = Projective {_px :: a, _py :: a, _pz :: a} -- (x * inv0 z, y * inv0 z)
@@ -17,7 +17,7 @@ data Point a = Projective {_px :: a, _py :: a, _pz :: a} -- (x * inv0 z, y * inv
                | PointAtInfinity deriving stock (Show)
 
 
-instance (F.Field a) => Eq (Point a) where
+instance (Field a) => Eq (Point a) where
   (==) (Affine x1 y1) (Affine x2 y2) = (x1 == x2) && (y1 == y2)
   (==) PointAtInfinity PointAtInfinity = True
   (==) PointAtInfinity _ = False 
@@ -25,8 +25,8 @@ instance (F.Field a) => Eq (Point a) where
   (==) pt1 pt2 = _toAffine pt1 == _toAffine pt2  -- one or more operand is projective
 
 
-type Fp = $(F.primeField C.pallasPrime)
-type Fq = $(F.primeField C.vestaPrime)
+type Fp = $(primeField pallasPrime)
+type Fq = $(primeField vestaPrime)
 newtype Pallas = Pallas (Point Fp) deriving stock (Show, Eq)
 newtype Vesta  = Vesta  (Point Fq) deriving stock (Show, Eq)
 
@@ -67,7 +67,7 @@ instance CurvePt Vesta where
   toProjective (Vesta pt) = Vesta $ _toProjective pt
 
 
-class (CurvePt a, F.Field b) => Curve a b where
+class (CurvePt a, Field b) => Curve a b where
   pointMul :: b -> a -> a
 
 
@@ -79,17 +79,17 @@ instance Curve Vesta Fp where
   pointMul s (Vesta pt) = Vesta $ _pointMul s pt (Projective 0 1 0) 0 15
 
 
-_fromBytes :: F.Field a => ByteString -> a -> a -> Maybe (Point a)
+_fromBytes :: Field a => ByteString -> a -> a -> Maybe (Point a)
 _fromBytes bytes a b
-    | DBS.length bytes == 1 && DBS.index bytes 0 == 0 = Just PointAtInfinity
-    | DBS.length bytes == expLen && (DBS.index bytes 0 == 0x2 || DBS.index bytes 0 == 0x03) = result
+    | length bytes == 1 && index bytes 0 == 0 = Just PointAtInfinity
+    | length bytes == expLen && (index bytes 0 == 0x2 || index bytes 0 == 0x03) = result
         where
-         expLen = 1 + DBS.length (F.toBytes a)
-         x = (+ a*0) <$> F.fromBytes (DBS.drop 1 bytes)  -- a*0 forces type
-         sgn0y = if DBS.index bytes 0 == 0x02 then 0 else 1::Integer
+         expLen = 1 + length (Fields.toBytes a)
+         x = (+ a*0) <$> Fields.fromBytes (drop 1 bytes)  -- a*0 forces type
+         sgn0y = if index bytes 0 == 0x02 then 0 else 1::Integer
          alpha = (\t -> t^(3::Integer) + a * t + b) <$> x
-         beta = alpha >>= F.sqrt
-         y =  (\t -> if F.sgn0 t == sgn0y then t else negate t) <$> beta
+         beta = alpha >>= sqrt
+         y =  (\t -> if sgn0 t == sgn0y then t else negate t) <$> beta
          result = Affine <$> x <*> y
 _fromBytes _ _ _ = Nothing
 
@@ -100,7 +100,7 @@ _fromBytes _ _ _ = Nothing
 -- _isOnCurve PointAtInfinity _ _ = True
 
 
-_negatePt :: (F.Field a) => Point a -> Point a
+_negatePt :: (Field a) => Point a -> Point a
 _negatePt (Projective x y z) = Projective x (- y) z
 _negatePt PointAtInfinity = PointAtInfinity
 _negatePt a = _negatePt $ _toProjective a
@@ -108,7 +108,7 @@ _negatePt a = _negatePt $ _toProjective a
 
 -- See https://eprint.iacr.org/2015/1060.pdf page 8; The following has all the additions 'squashed out'
 -- Algorithm 1: Complete, projective point addition for arbitrary prime order short Weierstrass curves E/Fq : y^2 = x^3 + ax + b.
-_pointAdd :: (F.Field a) => Point a -> Point a -> a -> a -> Point a
+_pointAdd :: (Field a) => Point a -> Point a -> a -> a -> Point a
 _pointAdd (Projective x1 y1 z1) (Projective x2 y2 z2) a b3 = result
   where
         m0 = x1 * x2
@@ -135,33 +135,33 @@ _pointAdd pt1 pt2 a b3 = _pointAdd (_toProjective pt1) (_toProjective pt2) a b3
 
 
 -- scalar * point, neutral, a, b3 -> point
-_pointMul :: (F.Field a, F.Field b) => b -> Point a -> Point a -> a -> a -> Point a
+_pointMul :: (Field a, Field b) => b -> Point a -> Point a -> a -> a -> Point a
 _pointMul scalar pt accum a b3
   | scalar == 0 = accum
-  | F.sgn0 scalar /= 0 = _pointMul (F.shiftR1 scalar) doublePt (_pointAdd accum pt a b3) a b3
-  | F.sgn0 scalar == 0 = _pointMul (F.shiftR1 scalar) doublePt accum a b3
-  | otherwise = panic "_pointMul pattern match fail (should never happen)"
+  | sgn0 scalar /= 0 = _pointMul (shiftR1 scalar) doublePt (_pointAdd accum pt a b3) a b3
+  | sgn0 scalar == 0 = _pointMul (shiftR1 scalar) doublePt accum a b3
+  | otherwise = error "_pointMul pattern match fail (should never happen)"
   where
     doublePt = _pointAdd pt pt a b3
 
 
-_toAffine :: (F.Field a) => Point a -> Point a
+_toAffine :: (Field a) => Point a -> Point a
 _toAffine (Projective _ _ 0) = PointAtInfinity
-_toAffine (Projective x y z) = Affine (x * F.inv0 z) (y * F.inv0 z)
+_toAffine (Projective x y z) = Affine (x * inv0 z) (y * inv0 z)
 _toAffine (Affine x y) = Affine x y
 _toAffine PointAtInfinity = PointAtInfinity
 
 
 -- Compressed; section 2.3.3 on page 10 of https://www.secg.org/sec1-v2.pdf
-_toBytes :: F.Field a => Point a -> ByteString
-_toBytes PointAtInfinity = DBS.pack [0]
+_toBytes :: Field a => Point a -> ByteString
+_toBytes PointAtInfinity = pack [0]
 _toBytes (Projective x y z) = _toBytes (_toAffine (Projective x y z))
 _toBytes (Affine x y)
-  | F.sgn0 y == 0 = DBS.cons 0x02 (F.toBytes x)
-  | otherwise     = DBS.cons 0x03 (F.toBytes x)
+  | sgn0 y == 0 = cons 0x02 (Fields.toBytes x)
+  | otherwise     = cons 0x03 (Fields.toBytes x)
 
 
-_toProjective :: F.Field a => Point a -> Point a
+_toProjective :: Field a => Point a -> Point a
 _toProjective (Projective x y z) = Projective x y z
 _toProjective (Affine x y) = Projective x y 1
 _toProjective PointAtInfinity = Projective 0 1 0

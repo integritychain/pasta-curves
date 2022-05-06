@@ -18,36 +18,34 @@ See README for more info
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
 
 
-module PastaCurves
-    ( projectName, a, b, c, main11
-    ) where
+module PastaCurves (projectName, a, b, c, main11) where
 
-import Protolude
+import Prelude (IO, String, print, (*))
 
-import Constants qualified as Co
-import Fields qualified as F
-import Curves qualified as C
+import Constants (pallasPrime, vestaPrime)
+import Fields (primeField, sqrt)
+import Curves (Pallas, neutral)
 
 
 main11 :: IO ()
 main11 = do
-  print ("hello, world" :: Text)
-  print (F.sqrt a)
-  print (F.sqrt b)
-  print (C.neutral :: C.Pallas)
+  print ("hello, world" :: String)
+  print (sqrt a)
+  print (sqrt b)
+  print (neutral :: Pallas)
 
 
-a :: $(F.primeField Co.pallasPrime)
+a :: $(primeField pallasPrime)
 a = 9
 
 
-b :: $(F.primeField Co.vestaPrime)
+b :: $(primeField vestaPrime)
 b = 9
 
 
-c :: $(F.primeField Co.pallasPrime)
+c :: $(primeField pallasPrime)
 c = 123*123
 
 
-projectName :: Text
+projectName :: String
 projectName = "pasta-curves"

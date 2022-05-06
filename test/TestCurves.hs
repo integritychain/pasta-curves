@@ -1,9 +1,9 @@
-{-# LANGUAGE DataKinds, FlexibleInstances, OverloadedStrings, Trustworthy, ImportQualifiedPost, NoImplicitPrelude #-}
+{-# LANGUAGE DataKinds, FlexibleInstances, ImportQualifiedPost, OverloadedStrings, NoImplicitPrelude, Trustworthy #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module TestCurves (curveProps, testPOI) where
 
-import Protolude
+import Prelude
 import Data.ByteString qualified as DBS
 import Test.Tasty qualified as TT
 import Test.Tasty.QuickCheck qualified as TTQC

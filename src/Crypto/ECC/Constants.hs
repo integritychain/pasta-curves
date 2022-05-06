@@ -2,7 +2,7 @@
 
 module Constants (pallasPrime, vestaPrime) where
 
-import Protolude
+import Prelude (Integer)
 
 
 -- | pallas field modulus https://neuromancer.sk/std/other/Pallas

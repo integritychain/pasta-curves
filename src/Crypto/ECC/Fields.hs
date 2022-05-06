@@ -14,20 +14,27 @@ serialization and deserialization, and hash2Field. The algorithms are not
 constant time.
 -}
 
-{-# LANGUAGE CPP, DataKinds, DerivingStrategies, ImportQualifiedPost #-}
-{-# LANGUAGE KindSignatures, NoImplicitPrelude, OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
+{-# LANGUAGE CPP, DataKinds, DerivingStrategies, ImportQualifiedPost, KindSignatures #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, ScopedTypeVariables, TemplateHaskell #-}
+{-# LANGUAGE Trustworthy #-}
 
-module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sgn0, shiftR1,
-               sqrt, toBytes, toI), primeField) where
+module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sgn0, shiftR1, sqrt,
+  toBytes, toI), primeField) where
 
-import Protolude
-import Protolude.Base (show)
-import Crypto.Hash qualified as CH 
-import Data.ByteArray qualified as DBA
-import Data.ByteString qualified as DBS
-import Data.Text qualified as DT
-import Language.Haskell.TH qualified as LHTH
+import Prelude (Bool (..), Eq (..), Int, Integer, Integral (..), Maybe (..), Num (..), 
+  Ord (..), Show (..), String, (.), (<$>), (++), (||), (^), ($), (!!), div, error, even, 
+  fromIntegral, head, length, not, otherwise, reverse, until)
+import Crypto.Hash (Blake2b_512 (Blake2b_512), hashWith)
+import Data.Bifunctor (bimap)
+import Data.Bits (shiftL, shiftR, (.|.))
+import Data.ByteArray (convert, length, xor)
+import Data.ByteString (concat, foldl', pack, replicate)
+import Data.ByteString.UTF8 (ByteString, fromString)
+import Data.Char (chr)
+import Data.Typeable (Proxy (Proxy))
+import GHC.Word (Word8)
+import GHC.TypeLits (KnownNat, Nat, natVal)
+import Language.Haskell.TH (TypeQ, litT, numTyLit)
 
 
 -- | The `Fp p` (template) type holds a field element with a parameterized
@@ -42,10 +49,10 @@ newtype Fp (p::Nat) = Fp Integer deriving stock (Eq)
 -- | The `primeField` function returns a Template Haskell splice that
 --   creates a concrete `Fp` `p` type with the specified prime modulus 
 --   `p`; Note that the primality of `p` is not checked.
-primeField :: Integer -> LHTH.TypeQ
+primeField :: Integer -> TypeQ
 primeField p
-  | p < 3    = panic "primeField: n must be larger than 2"
-  | otherwise = [t| Fp $(LHTH.litT (LHTH.numTyLit p)) |]
+  | p < 3    = error "primeField: n must be larger than 2"
+  | otherwise = [t| Fp $(litT (numTyLit p)) |]
 
 
 -- | The `Fp p` type is an instance of the `Num` class.
@@ -54,14 +61,14 @@ instance KnownNat p => Num (Fp p) where
   (+) (Fp a) (Fp b) = fromInteger (a + b)
   (-) (Fp a) (Fp b) = fromInteger (a - b)
   (*) (Fp a) (Fp b) = fromInteger (a * b)
-  abs = panic "abs: not implemented"
-  signum = panic "signum: not implemented"
+  abs = error "abs: not implemented"
+  signum = error "signum: not implemented"
 
 
 -- | The `Fp p` type is an instance of the `Show` class in hexadecimal.
 instance KnownNat p => Show (Fp p) where
-  show (Fp a) = "0x" ++ [DT.index "0123456789ABCDEF" $ nibble n | n <- [e, e-1..0]]
-    where 
+  show (Fp a) = "0x" ++ ["0123456789ABCDEF" !! nibble n | n <- [e, e-1..0]]
+    where
       nibble :: Int -> Int
       nibble n = fromInteger $ shiftR a (n*4) `mod` 16
       e = ((3 + until ((MOD <) . (2^)) (+1) 0) `div` 4) - 1 :: Int
@@ -86,7 +93,7 @@ class (Num a, Eq a) => Field a where
   -- | The `hash2Field` function provides intermediate functionality that 
   --   is suitable for ultimately supporting the `Curves.hash2Curve`
   --   function. This function returns a 2-tuple of field elements.
-  hash2Field :: ByteString -> Text -> Text -> (a, a)
+  hash2Field :: ByteString -> String -> String -> (a, a)
 
   -- | The `inv0` function returns the multiplicative inverse as 
   --   calculated by Fermat's Little Theorem (which maps 0 to 0).
@@ -105,12 +112,12 @@ class (Num a, Eq a) => Field a where
   --   The function returns `Nothing` in the event of a problem (such
   --   as the operand not being a square, the modulus is not prime, etc).
   sqrt :: a -> Maybe a
- 
+
   -- | The `toBytes` function serializes an element into a big-endian
   --   `ByteString` sized to minimal contain the modulus.
   toBytes :: a -> ByteString
 
-  toI :: a -> Integer 
+  toI :: a -> Integer
 
 
 -- | The `Fp p` type is an instance of the `Field` class. These functions
@@ -120,16 +127,16 @@ instance KnownNat p => Field (Fp p) where
 
   -- Validated deserialization, returns a Maybe field element.
   -- fromBytes :: ByteString  -> Maybe a
-  fromBytes bytes | DBS.length bytes /= expectedB || integer >= MOD = Nothing
+  fromBytes bytes | Data.ByteArray.length bytes /= expLen || integer >= MOD = Nothing
                   | otherwise = Just $ fromInteger integer
     where
-      expectedB = (7 + until ((MOD <) . (2^)) (+1) 0) `div` 8 :: Int
-      integer = DBS.foldl' (\a b -> a `shiftL` 8 .|. fromIntegral b) 0 bytes :: Integer
+      expLen = (7 + until ((MOD <) . (2^)) (+1) 0) `div` 8 :: Int
+      integer = foldl' (\a b -> a `shiftL` 8 .|. fromIntegral b) 0 bytes :: Integer
 
 
   -- Unvalidated deserialization, returns reduced field element.
   -- _fromBytes :: ByteString -> a
-  _fromBytes bytes = fromInteger $ DBS.foldl' (\a b -> a `shiftL` 8 .|. fromIntegral b) 0 bytes
+  _fromBytes bytes = fromInteger $ foldl' (\a b -> a `shiftL` 8 .|. fromIntegral b) 0 bytes
 
 
   -- Supports for the hash2Curve function, returns pair of field elements.
@@ -153,19 +160,19 @@ instance KnownNat p => Field (Fp p) where
   -- Returns square root as Maybe field element. If problems, returns Nothing.
   -- sqrt :: a -> Maybe a
   sqrt (Fp a) = fromInteger <$> _sqrtVt a (MOD) s p c
-    where  -- rewrite:  (modulus - 1) = p * 2**s 
+    where  -- rewrite (modulus - 1) as p * 2**s 
       s = until ((/= 0) . ((MOD -1) `rem`) . (2^)) (+1) 0 - 1 :: Integer
       p = (MOD - 1) `div` (2^s)
-      z = headDef 0 [x | x <- [1..], not (_isSqr x (MOD))] -- 1st non-square
+      z = head ([x | x <- [1..], not (_isSqr x (MOD))] ++ [0]) -- 1st non-square
       c = _powMod z p (MOD)  -- 'fountain of fixes'
 
 
   -- Deserialization.
   -- toBytes :: a -> ByteString
-  toBytes (Fp a) = DBS.pack $ reverse res
+  toBytes (Fp a) = pack $ reverse res
     where
-      requiredB = (7 + until ((MOD <) . (2^)) (+1) 0) `div` 8 :: Integer
-      res = [fromIntegral (shiftR a (8*b)) | b <- [0..(fromIntegral requiredB - 1)]] :: [Word8]
+      expLen = (7 + until ((MOD <) . (2^)) (+1) 0) `div` 8 :: Integer
+      res = [fromIntegral (shiftR a (8*b)) | b <- [0..(fromIntegral expLen - 1)]] :: [Word8]
 
 
   -- toI :: a -> Integer 
@@ -176,7 +183,7 @@ instance KnownNat p => Field (Fp p) where
 
 -- | Modular exponentiation.
 _powMod :: Integer -> Integer -> Integer -> Integer
-_powMod _ e q | e < 0 || q < 1 = panic "Invalid exponent/modulus"
+_powMod _ e q | e < 0 || q < 1 = error "Invalid exponent/modulus"
 _powMod _ 0 _ = 1
 _powMod a 1 _ = a
 _powMod a e q | even e = _powMod (a * a `mod` q) (shiftR e 1) q
@@ -205,7 +212,7 @@ _sqrtVt a q s p c = Just result
         loopy  1 rr  _  _ = rr
         loopy tt rr cc ss = loopy t_n r_n c_n s_n
           where
-            s_n = headDef 0 [i | i <- [1..(ss - 1)], _powMod tt (2^i) q == 1]
+            s_n = head ([i | i <- [1..(ss - 1)], _powMod tt (2^i) q == 1] ++ [0]) :: Integer
             ff = _powMod cc (2^(ss - s_n - 1)) q
             r_n = rr * ff `mod` q
             t_n = (tt * _powMod ff 2 q) `mod` q
@@ -215,15 +222,15 @@ _sqrtVt a q s p c = Just result
 -- hash2field per Zcash Pasta Curve construction (similar but not idential 
 -- to the CFRG hash-to-curve specification)
 -- Fortuitously, hash personalization is set to all zeros https://github.com/haskell-crypto/cryptonite/issues/333
-_h2f :: ByteString -> Text -> Text ->  (ByteString, ByteString)
+_h2f :: ByteString -> String -> String ->  (ByteString, ByteString)
 _h2f msg domPrefix curveId = (digest1, digest2)
   where
-    prefix = DBS.replicate 128 0
-    suffix = DBS.concat [encodeUtf8 domPrefix, "-", encodeUtf8 curveId, "_XMD:BLAKE2b_SSWU_RO_",
-             DBS.pack [22 + fromIntegral (DT.length curveId) + fromIntegral (DT.length domPrefix)]]
-    mkDigest :: ByteString -> ByteString 
-    mkDigest x = DBA.convert $ CH.hashWith CH.Blake2b_512 x
-    digest0 = mkDigest $ DBS.concat [prefix, msg, DBS.pack [0,0x80,0], suffix]
-    digest1 = mkDigest $ DBS.concat [digest0, DBS.pack [0x01], suffix]
-    mix = DBA.xor digest0 digest1 :: ByteString
-    digest2 = mkDigest $ DBS.concat [mix, DBS.pack [0x02], suffix]
+    prefix = Data.ByteString.replicate 128 0
+    suffix = fromString (domPrefix ++ "-" ++ curveId ++ "_XMD:BLAKE2b_SSWU_RO_"
+             ++ [chr (22 + Prelude.length curveId + Prelude.length domPrefix)])
+    mkDigest :: ByteString -> ByteString
+    mkDigest x = convert $ hashWith Blake2b_512 x
+    digest0 = mkDigest $ Data.ByteString.concat [prefix, msg, pack [0,0x80,0], suffix]
+    digest1 = mkDigest $ Data.ByteString.concat [digest0, pack [0x01], suffix]
+    mix = xor digest0 digest1 :: ByteString
+    digest2 = mkDigest $ Data.ByteString.concat [mix, pack [0x02], suffix]

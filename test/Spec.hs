@@ -1,9 +1,9 @@
-{-# LANGUAGE OverloadedStrings, Trustworthy, NoImplicitPrelude, ImportQualifiedPost #-}
+{-# LANGUAGE OverloadedStrings, Trustworthy, ImportQualifiedPost, NoImplicitPrelude #-}
 
 
 module Main (main) where
 
-import Protolude
+import Prelude
 import Test.Tasty qualified as TT
 import TestFields qualified as F
 import TestCurves qualified as C

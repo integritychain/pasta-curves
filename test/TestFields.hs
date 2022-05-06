@@ -1,11 +1,10 @@
-{-# LANGUAGE DataKinds, FlexibleInstances, OverloadedStrings, TemplateHaskell, Trustworthy, ImportQualifiedPost, NoImplicitPrelude #-}
+{-# LANGUAGE DataKinds, FlexibleInstances, NoImplicitPrelude, OverloadedStrings, TemplateHaskell, Trustworthy, ImportQualifiedPost #-}
 {-# OPTIONS_GHC -Wno-orphans -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 
 module TestFields (fieldProps, testH2Fp) where
 
-import Protolude
-
+import Prelude
 import Data.ByteString qualified as DBS
 import Data.Maybe qualified as DM
 import Test.Tasty qualified as TT
@@ -14,6 +13,7 @@ import Test.Tasty.QuickCheck qualified as TTQC
 
 import Fields qualified as F
 import Constants qualified as C
+import Control.Monad (replicateM)
 
 
 type Fp = $(F.primeField C.pallasPrime)
