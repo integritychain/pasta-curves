@@ -7,7 +7,6 @@ module Curves (Curve(pointMul), CurvePt(base, fromBytes, negatePt, neutral, poin
 import Prelude(Applicative((<*>)), Bool(..), Eq(..), Integer, Maybe(..), Monad((>>=)), 
   Num(..), Show, ($), (<$>), (^), (&&), (||), error, negate, otherwise)
 import Data.ByteString (ByteString, cons, drop, index, length, pack)
-
 import Fields (Field, fromBytes, inv0, primeField, shiftR1, sgn0, sqrt, toBytes)
 import Constants (pallasPrime, vestaPrime)
 
@@ -34,7 +33,6 @@ newtype Vesta  = Vesta  (Point Fq) deriving stock (Show, Eq)
 class CurvePt a where
   base :: a
   fromBytes :: ByteString -> Maybe a
-  -- isOnCurve :: a -> Bool
   negatePt :: a -> a
   neutral :: a
   pointAdd :: a -> a -> a
@@ -46,7 +44,6 @@ class CurvePt a where
 instance CurvePt Pallas where
   base = Pallas $ Projective 1 0x248b4a5cf5ed6c83ac20560f9c8711ab92e13d27d60fb1aa7f5db6c93512d546 1
   fromBytes b = Pallas <$> _fromBytes b 0 5
-  -- isOnCurve (Pallas pt) = _isOnCurve pt 0 5
   negatePt (Pallas pt) = Pallas $ _negatePt pt
   neutral = Pallas $ Projective 0 1 0
   pointAdd (Pallas pt1) (Pallas pt2) = Pallas $ _pointAdd pt1 pt2 0 15  -- b3=3*b
@@ -58,7 +55,6 @@ instance CurvePt Pallas where
 instance CurvePt Vesta where
   base = Vesta $ Projective  1 0x26bc999156dd5194ec49b1c551768ab375785e7ce00906d13e0361674fd8959f 1
   fromBytes b = Vesta <$> _fromBytes b 0 5
-  -- isOnCurve (Vesta pt) = _isOnCurve pt 0 5
   negatePt (Vesta pt) = Vesta $ _negatePt pt
   neutral = Vesta $ Projective 0 1 0
   pointAdd (Vesta pt1) (Vesta pt2) = Vesta $ _pointAdd pt1 pt2 0 15  -- b3=3*b
@@ -92,12 +88,6 @@ _fromBytes bytes a b
          y =  (\t -> if sgn0 t == sgn0y then t else negate t) <$> beta
          result = Affine <$> x <*> y
 _fromBytes _ _ _ = Nothing
-
-
--- _isOnCurve :: (F.Field a) => Point a -> a -> a -> Bool
--- _isOnCurve (Projective x y z) a b = z*y^(2::Integer) == x^(3::Integer) + a*x*z^(2::Integer) + b*z^(3::Integer)
--- _isOnCurve (Affine x y) a b = y^(2::Integer) == x^(3::Integer) + a*x + b
--- _isOnCurve PointAtInfinity _ _ = True
 
 
 _negatePt :: (Field a) => Point a -> Point a
