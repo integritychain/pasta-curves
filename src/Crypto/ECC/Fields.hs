@@ -229,9 +229,9 @@ _sqrtVt a q s p c = Just result
             c_n = _powMod cc (2^(ss - s_n)) q
 
 
--- hash2field per Zcash Pasta Curve construction (similar but not idential 
--- to the CFRG hash-to-curve specification)
--- Fortuitously, hash personalization is set to all zeros https://github.com/haskell-crypto/cryptonite/issues/333
+-- hash2field per Zcash Pasta Curve construction (similar but not idential to the CFRG 
+-- hash-to-curve specification). Fortuitously, cryptonite sets hash personalization to all 
+-- zeros, see https://github.com/haskell-crypto/cryptonite/issues/333
 -- _h2f :: message -> domain prefix -> curve ID
 _h2f :: ByteString -> String -> String ->  (ByteString, ByteString)
 _h2f msg domPrefix curveId = (digest1, digest2)

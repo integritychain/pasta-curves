@@ -11,6 +11,10 @@ import Fields (Field, fromBytes, inv0, primeField, shiftR1, sgn0, sqrt, toBytes)
 import Constants (pallasPrime, vestaPrime)
 
 
+type Fp = $(primeField pallasPrime)
+type Fq = $(primeField vestaPrime)
+
+
 data Point a = Projective {_px :: a, _py :: a, _pz :: a} -- (x * inv0 z, y * inv0 z)
                | Affine {_ax :: a, _ay :: a}
                | PointAtInfinity deriving stock (Show)
@@ -24,8 +28,6 @@ instance (Field a) => Eq (Point a) where
   (==) pt1 pt2 = _toAffine pt1 == _toAffine pt2  -- one or more operand is projective
 
 
-type Fp = $(primeField pallasPrime)
-type Fq = $(primeField vestaPrime)
 newtype Pallas = Pallas (Point Fp) deriving stock (Show, Eq)
 newtype Vesta  = Vesta  (Point Fq) deriving stock (Show, Eq)
 
