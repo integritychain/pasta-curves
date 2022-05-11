@@ -18,13 +18,15 @@ See README for more info
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
 
 
-module PastaCurves (projectName, a, b, c, main11) where
+module PastaCurves (projectName, a, b, c, main11, pTestTemp) where
 
-import Prelude (IO, String, print, (*))
+import Prelude (IO, String, print, (*), error)
 
 import Constants (pallasPrime, vestaPrime)
-import Fields (primeField, sqrt)
+import Fields -- (primeField, sqrt)
 import Curves (Pallas, neutral)
+import Pcurves qualified as PC
+import Language.Haskell.TH -- (TypeQ, litT, numTyLit,strTyLit)
 
 
 main11 :: IO ()
@@ -34,6 +36,13 @@ main11 = do
   print (sqrt b)
   print (neutral :: Pallas)
 
+
+pTestTemp :: $(PC.pCurve 123 "Fp") --a0
+pTestTemp = PC.testBase
+
+z :: $(PC.xx "MyName" pallasPrime 55)
+--z = PC.PointAtInfinity
+z = error "asdf"
 
 a :: $(primeField pallasPrime)
 a = 9

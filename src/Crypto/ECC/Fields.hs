@@ -17,7 +17,7 @@ The algorithms are not constant time.
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
 
 module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sgn0, shiftR1, sqrt,
-  toBytes, toI), primeField) where
+  toBytes, toI), primeField, Fp(..)) where
 
 import Prelude (Bool (..), Eq (..), Int, Integer, Integral (..), Maybe (..), Num (..), 
   Ord (..), Show (..), String, (.), (<$>), (++), (||), (^), ($), (!!), div, error, even, 

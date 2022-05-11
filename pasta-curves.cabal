@@ -29,7 +29,7 @@ common common-options
                        memory >= 0.16,
                        bytestring >= 0.10,
                        template-haskell >= 2.16
-  other-modules:       Fields, Curves, Constants
+  other-modules:       Fields, Curves, Constants, Pcurves
 
   ghc-options:         -Weverything
                        -Wno-missing-import-lists

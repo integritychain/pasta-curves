@@ -9,7 +9,8 @@ import TestFields qualified as F
 import TestCurves qualified as C
 import System.Environment qualified as SE
 
-import PastaCurves (projectName)
+import PastaCurves (projectName, pTestTemp)
+import Pcurves
 
 
 main :: IO ()
@@ -17,4 +18,5 @@ main = do
   SE.setEnv "TASTY_QUICKCHECK_TESTS" "1_000"
   TT.defaultMain $ TT.testGroup "\nRunning Tests" [F.fieldProps, F.testH2Fp, C.curveProps, C.testPOI]
   print projectName
-
+  print jimmy
+  print pTestTemp
