@@ -2,17 +2,16 @@
 {-# LANGUAGE NoImplicitPrelude, TemplateHaskell, Trustworthy #-}
 
 module Curves (Curve(pointMul), CurvePt(base, fromBytes, negatePt, neutral, pointAdd, 
-  toAffine, toBytes, toProjective), Fp, Fq, Pallas, Vesta) where
+  toAffine, toBytes, toProjective), Curves.Fp, Fq, Pallas, Vesta) where
 
 import Prelude(Applicative((<*>)), Bool(..), Eq(..), Integer, Maybe(..), Monad((>>=)), 
   Num(..), Show, ($), (<$>), (^), (&&), (||), error, negate, otherwise)
 import Data.ByteString (ByteString, cons, drop, index, length, pack)
-import Fields (Field, fromBytes, inv0, primeField, shiftR1, sgn0, sqrt, toBytes)
-import Constants (pallasPrime, vestaPrime)
+import Fields (Field, Fp, fromBytes, inv0, shiftR1, sgn0, sqrt, toBytes)
+-- import Constants (pallasPrime, vestaPrime)
 
-
-type Fp = $(primeField pallasPrime)
-type Fq = $(primeField vestaPrime)
+type Fp = Fields.Fp 0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001
+type Fq = Fields.Fp 0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001
 
 
 data Point a = Projective {_px :: a, _py :: a, _pz :: a} -- (x * inv0 z, y * inv0 z)
@@ -28,7 +27,7 @@ instance (Field a) => Eq (Point a) where
   (==) pt1 pt2 = _toAffine pt1 == _toAffine pt2  -- one or more operand is projective
 
 
-newtype Pallas = Pallas (Point Fp) deriving stock (Show, Eq)
+newtype Pallas = Pallas (Point Curves.Fp) deriving stock (Show, Eq)
 newtype Vesta  = Vesta  (Point Fq) deriving stock (Show, Eq)
 
 
@@ -73,7 +72,7 @@ instance Curve Pallas Fq where
   pointMul s (Pallas pt) = Pallas $ _pointMul s pt (Projective 0 1 0) 0 15
 
 
-instance Curve Vesta Fp where
+instance Curve Vesta Curves.Fp where
   pointMul s (Vesta pt) = Vesta $ _pointMul s pt (Projective 0 1 0) 0 15
 
 

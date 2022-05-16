@@ -5,12 +5,12 @@ module TestCurves (curveProps, testPOI) where
 
 import Prelude
 import Data.ByteString qualified as DBS
-import Test.Tasty qualified as TT
+import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck qualified as TTQC
 import Test.Tasty.HUnit qualified as TTHU
 
 
-import Curves
+import PastaCurves
 import TestFields ()
 import Data.Maybe (fromJust)
 -- import qualified GHC.Generics as DM
@@ -27,8 +27,8 @@ instance TTQC.Arbitrary Vesta where
     return $ pointMul (scalar :: Fp) (base :: Vesta)  
 
 
-curveProps :: TT.TestTree
-curveProps = TT.testGroup "Testing Curve properties via QuickCheck" [
+curveProps :: TestTree
+curveProps = testGroup "Testing Curve properties via QuickCheck" [
   TTQC.testProperty "Pallas point add/mul" $ 
     \a b -> pointAdd (pointMul (a :: Fq) base) (pointMul b base) == pointMul (a+b) (base :: Pallas),
   TTQC.testProperty "Pallas point add symm" $
@@ -48,7 +48,7 @@ curveProps = TT.testGroup "Testing Curve properties via QuickCheck" [
 
   ]
 -- --------------? HMMMM
-testPOI :: TT.TestTree
+testPOI :: TestTree
 testPOI = TTHU.testCase "huTstPairingMul" $
   do
     let poi_bytes = DBS.pack [0]

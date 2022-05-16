@@ -27,9 +27,8 @@ common common-options
                        utf8-string >= 1,
                        cryptonite >= 0.29,
                        memory >= 0.16,
-                       bytestring >= 0.10,
-                       template-haskell >= 2.16
-  other-modules:       Fields, Curves, Constants, Pcurves
+                       bytestring >= 0.10
+  other-modules:       Fields, Constants, Pcurves
 
   ghc-options:         -Weverything
                        -Wno-missing-import-lists

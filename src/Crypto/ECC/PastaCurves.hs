@@ -12,47 +12,46 @@ See README for more info
 --   2. Ensure full test coverage
 --   3. Install test coverage reporting?
 
-
-
-{-# LANGUAGE CPP, DataKinds, KindSignatures, ImportQualifiedPost, NoImplicitPrelude #-}
+{-# LANGUAGE StandaloneDeriving, CPP, DataKinds, KindSignatures, ImportQualifiedPost, NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
 
 
-module PastaCurves (projectName, a, b, c, main11, pTestTemp) where
+module PastaCurves (projectName, a, b, c, main11, Fp, Pallas, Fq, Vesta, 
+  PC.Curve(pointMul), PC.CurvePt(base, fromBytes, negatePt, neutral, pointAdd, 
+  toAffine, toBytes, toProjective)) where
 
-import Prelude (IO, String, print, (*), error)
+import Prelude (IO, String, print, (*))
 
-import Constants (pallasPrime, vestaPrime)
-import Fields -- (primeField, sqrt)
-import Curves (Pallas, neutral)
+import Fields qualified as F -- (primeField, sqrt)
 import Pcurves qualified as PC
-import Language.Haskell.TH -- (TypeQ, litT, numTyLit,strTyLit)
+--import GHC.TypeLits (Nat)
 
 
 main11 :: IO ()
 main11 = do
   print ("hello, world" :: String)
-  print (sqrt a)
-  print (sqrt b)
-  print (neutral :: Pallas)
+  print (F.sqrt a)
+  print (F.sqrt b)
+  print (PC.neutral :: PastaCurves.Pallas)
 
 
-pTestTemp :: $(PC.pCurve 123 "Fp") --a0
-pTestTemp = PC.testBase
+type Fp  = F.Fz 0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001
+type Pallas = (PC.Point 0 5 1 0x248b4a5cf5ed6c83ac20560f9c8711ab92e13d27d60fb1aa7f5db6c93512d546 (PastaCurves.Fp))
 
-z :: $(PC.xx "MyName" pallasPrime 55)
---z = PC.PointAtInfinity
-z = error "asdf"
+type Fq = F.Fz 0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001
+type Vesta  = (PC.Point 0 5 1 0x26bc999156dd5194ec49b1c551768ab375785e7ce00906d13e0361674fd8959f (PastaCurves.Fq))
 
-a :: $(primeField pallasPrime)
+zobba = PC.base :: PastaCurves.Pallas
+
+a :: PastaCurves.Fp -- $(primeField pallasPrime)
 a = 9
 
 
-b :: $(primeField vestaPrime)
+b :: Fq -- $(primeField vestaPrime)
 b = 9
 
 
-c :: $(primeField pallasPrime)
+c :: PastaCurves.Fp -- $(primeField pallasPrime)
 c = 123*123
 
 

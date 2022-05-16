@@ -1,22 +1,16 @@
 {-# LANGUAGE OverloadedStrings, Trustworthy, ImportQualifiedPost, NoImplicitPrelude #-}
 
-
 module Main (main) where
 
-import Prelude
-import Test.Tasty qualified as TT
-import TestFields qualified as F
-import TestCurves qualified as C
-import System.Environment qualified as SE
-
-import PastaCurves (projectName, pTestTemp)
-import Pcurves
+import Prelude (IO, String, print, ($))
+import System.Environment (setEnv)
+import Test.Tasty (defaultMain, testGroup)
+import TestFields (fieldProps, testH2Fp)
+import TestCurves (curveProps, testPOI)
 
 
 main :: IO ()
 main = do
-  SE.setEnv "TASTY_QUICKCHECK_TESTS" "1_000"
-  TT.defaultMain $ TT.testGroup "\nRunning Tests" [F.fieldProps, F.testH2Fp, C.curveProps, C.testPOI]
-  print projectName
-  print jimmy
-  print pTestTemp
+  setEnv "TASTY_QUICKCHECK_TESTS" "1_000"
+  defaultMain $ testGroup "\nRunning Tests" [fieldProps, testH2Fp, curveProps, testPOI]
+  print ("wogga!" :: String)

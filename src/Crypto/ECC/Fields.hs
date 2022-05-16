@@ -17,7 +17,7 @@ The algorithms are not constant time.
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
 
 module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sgn0, shiftR1, sqrt,
-  toBytes, toI), primeField, Fp(..)) where
+  toBytes, toI), Fz(..)) where
 
 import Prelude (Bool (..), Eq (..), Int, Integer, Integral (..), Maybe (..), Num (..), 
   Ord (..), Show (..), String, (.), (<$>), (++), (||), (^), ($), (!!), div, error, even, 
@@ -32,40 +32,30 @@ import Data.Char (chr)
 import Data.Typeable (Proxy (Proxy))
 import GHC.Word (Word8)
 import GHC.TypeLits (KnownNat, Nat, natVal)
-import Language.Haskell.TH (TypeQ, litT, numTyLit)
 
 
--- | The `Fp p` (template) type holds a field element with a parameterized modulus of 
--- `p`; Note that the constructor is not itself exported.
-newtype Fp (p::Nat) = Fp Integer deriving stock (Eq)
+-- | The `Fz z` (template) type holds a field element with a parameterized modulus of 
+-- `z`; Note that the constructor is not itself exported.
+data Fz (z::Nat) = Fz Integer deriving stock (Eq)
 
 
--- A CPP macro 'helper' to extract the modulus from (Fp p)
-#define MOD natVal (Proxy :: Proxy p)
+-- A CPP macro 'helper' to extract the modulus from (Fz z)
+#define MOD natVal (Proxy :: Proxy z)
 
 
--- | The `primeField` function returns a Template Haskell splice that creates a concrete
--- `Fp` `p` type with the specified prime modulus `p`; Note that the primality of `p` is 
--- not checked.
-primeField :: Integer -> TypeQ
-primeField p
-  | p < 3    = error "primeField: n must be larger than 2"
-  | otherwise = [t| Fp $(litT (numTyLit p)) |]
-
-
--- | The `Fp p` type is an instance of the `Num` class.
-instance KnownNat p => Num (Fp p) where
-  fromInteger a = Fp $ a `mod` MOD
-  (+) (Fp a) (Fp b) = fromInteger (a + b)
-  (-) (Fp a) (Fp b) = fromInteger (a - b)
-  (*) (Fp a) (Fp b) = fromInteger (a * b)
+-- | The `Fz z` type is an instance of the `Num` class.
+instance KnownNat z => Num (Fz z) where
+  fromInteger a = Fz $ a `mod` MOD
+  (+) (Fz a) (Fz b) = fromInteger (a + b)
+  (-) (Fz a) (Fz b) = fromInteger (a - b)
+  (*) (Fz a) (Fz b) = fromInteger (a * b)
   abs = error "abs: not implemented"
   signum = error "signum: not implemented"
 
 
--- | The `Fp p` type is an instance of the `Show` class written in hexadecimal.
-instance KnownNat p => Show (Fp p) where
-  show (Fp a) = "0x" ++ ["0123456789ABCDEF" !! nibble n | n <- [e, e-1..0]]
+-- | The `Fz z` type is an instance of the `Show` class written in hexadecimal.
+instance KnownNat z => Show (Fz z) where
+  show (Fz a) = "0x" ++ ["0123456789ABCDEF" !! nibble n | n <- [e, e-1..0]]
     where
       nibble :: Int -> Int
       nibble n = fromInteger $ shiftR a (n*4) `mod` 16
@@ -120,9 +110,9 @@ class (Num a, Eq a) => Field a where
   toI :: a -> Integer
 
 
--- | The `Fp p` type is an instance of the `Field` class. These functions are largely 
+-- | The `Fz p` type is an instance of the `Field` class. These functions are largely 
 -- simple adapters to the more generic internal functions implemented further below.
-instance KnownNat p => Field (Fp p) where
+instance KnownNat z => Field (Fz z) where
 
   -- Validated deserialization, returns a Maybe field element.
   -- fromBytes :: ByteString  -> Maybe a
@@ -145,27 +135,27 @@ instance KnownNat p => Field (Fp p) where
 
   -- Multiplicative inverse, with 0 mapped to 0.
   -- inv0 :: a -> a
-  inv0 (Fp a) = fromInteger $ _powMod a (MOD - 2) (MOD)
+  inv0 (Fz a) = fromInteger $ _powMod a (MOD - 2) (MOD)
 
 
   -- Determines if the operand has a square root.
   -- isSqr :: a -> Bool
-  isSqr (Fp a) = _isSqr a (MOD)
+  isSqr (Fz a) = _isSqr a (MOD)
 
 
   -- Returns the least significant bit of the field element
   -- sgn0 :: a -> Integer
-  sgn0 (Fp a) = a `mod` 2
+  sgn0 (Fz a) = a `mod` 2
 
 
   -- Diveds the element by 2
   -- shiftR1 :: a -> a
-  shiftR1 (Fp a) = Fp (a `div` 2)
+  shiftR1 (Fz a) = Fz (a `div` 2)
 
 
   -- Returns square root as Maybe field element. If problems, returns Nothing.
   -- sqrt :: a -> Maybe a
-  sqrt (Fp a) = fromInteger <$> _sqrtVt a (MOD) s p c
+  sqrt (Fz a) = fromInteger <$> _sqrtVt a (MOD) s p c
     where  -- rewrite (modulus - 1) as p * 2**s 
       s = until ((/= 0) . ((MOD -1) `rem`) . (2^)) (+1) 0 - 1 :: Integer
       p = (MOD - 1) `div` (2^s)
@@ -175,7 +165,7 @@ instance KnownNat p => Field (Fp p) where
 
   -- Deserialization.
   -- toBytes :: a -> ByteString
-  toBytes (Fp a) = pack $ reverse res
+  toBytes (Fz a) = pack $ reverse res
     where
       expLen = (7 + until ((MOD <) . (2^)) (+1) 0) `div` 8 :: Integer
       res = [fromIntegral (shiftR a (8*b)) | b <- [0..(fromIntegral expLen - 1)]] :: [Word8]
@@ -183,7 +173,7 @@ instance KnownNat p => Field (Fp p) where
 
   -- Returns the element as an Integer
   -- toI :: a -> Integer 
-  toI (Fp a) = a
+  toI (Fz a) = a
 
 
 -- Complex/common support functions operating on integers rather than field elements

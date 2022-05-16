@@ -16,8 +16,14 @@ import Constants qualified as C
 import Control.Monad (replicateM)
 
 
-type Fp = $(F.primeField C.pallasPrime)
-type Fq = $(F.primeField C.vestaPrime)
+-- type Fp = $(F.primeField C.pallasPrime)
+-- type Fq = $(F.primeField C.vestaPrime)
+type Fp  = F.Fz 0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001
+-- type Fp = $(primeField pallasPrime)
+
+type Fq = F.Fz 0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001
+--type Fq = $(primeField vestaPrime)
+
 
 instance TTQC.Arbitrary Fp where  --  $(F.primeField C.pallasPrime) where
    arbitrary = do
@@ -40,13 +46,13 @@ fieldProps = TT.testGroup "Testing Field properties via QuickCheck" [
   TTQC.testProperty "Fp inv0"   $ \a -> a * F.inv0 a == (1 :: Fp),
   TTQC.testProperty "Fp sqrt"   $ \a -> DM.fromJust (F.sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer) :: Fp),
   TTQC.testProperty "Fp serdes" $ \a -> DM.fromJust (F.fromBytes  (F.toBytes (F._fromBytes a ::
-       $(F.primeField C.pallasPrime)))) == (F._fromBytes a :: Fp),
+       Fp))) == (F._fromBytes a :: Fp),
 
   TTQC.testProperty "Fq arith"  $ \a b c -> a*(b-c) - a*b + a*c == (0 :: Fq),
   TTQC.testProperty "Fq inv0"   $ \a -> a * F.inv0 a == (1 :: Fq),
   TTQC.testProperty "Fq sqrt"   $ \a -> DM.fromJust (F.sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer)  :: Fq),
   TTQC.testProperty "Fq serdes" $ \a -> DM.fromJust (F.fromBytes  (F.toBytes (F._fromBytes a ::
-       $(F.primeField C.vestaPrime)))) == (F._fromBytes a :: Fq)
+       Fq))) == (F._fromBytes a :: Fq)
   ]
 
 testH2Fp :: TT.TestTree
