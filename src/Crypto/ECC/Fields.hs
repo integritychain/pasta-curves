@@ -14,14 +14,11 @@ The algorithms are not constant time.
 -}
 
 {-# LANGUAGE CPP, DataKinds, DerivingStrategies, KindSignatures, NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, TemplateHaskell, Trustworthy #-}
+{-# LANGUAGE ScopedTypeVariables, Trustworthy #-}
 
-module Fields (Field(_fromBytes, fromBytes, hash2Field, inv0, isSqr, sgn0, shiftR1, sqrt,
-  toBytes, toI), Fz(..)) where
+module Fields (Field(..), Fz(..)) where
 
-import Prelude (Bool (..), Eq (..), Int, Integer, Integral (..), Maybe (..), Num (..), 
-  Ord (..), Show (..), String, (.), (<$>), (++), (||), (^), ($), (!!), div, error, even, 
-  fromIntegral, head, length, not, otherwise, reverse, until)
+import Prelude
 import Crypto.Hash (Blake2b_512 (Blake2b_512), hashWith)
 import Data.Bifunctor (bimap)
 import Data.Bits ((.|.), shiftL, shiftR)
@@ -36,7 +33,7 @@ import GHC.TypeLits (KnownNat, Nat, natVal)
 
 -- | The `Fz z` (template) type holds a field element with a parameterized modulus of 
 -- `z`; Note that the constructor is not itself exported.
-data Fz (z::Nat) = Fz Integer deriving stock (Eq)
+newtype Fz (z::Nat) = Fz Integer deriving stock (Eq)
 
 
 -- A CPP macro 'helper' to extract the modulus from (Fz z)
@@ -45,16 +42,23 @@ data Fz (z::Nat) = Fz Integer deriving stock (Eq)
 
 -- | The `Fz z` type is an instance of the `Num` class.
 instance KnownNat z => Num (Fz z) where
+
   fromInteger a = Fz $ a `mod` MOD
+    
   (+) (Fz a) (Fz b) = fromInteger (a + b)
+  
   (-) (Fz a) (Fz b) = fromInteger (a - b)
+  
   (*) (Fz a) (Fz b) = fromInteger (a * b)
+  
   abs = error "abs: not implemented"
+  
   signum = error "signum: not implemented"
 
 
 -- | The `Fz z` type is an instance of the `Show` class written in hexadecimal.
 instance KnownNat z => Show (Fz z) where
+
   show (Fz a) = "0x" ++ ["0123456789ABCDEF" !! nibble n | n <- [e, e-1..0]]
     where
       nibble :: Int -> Int
@@ -129,8 +133,21 @@ instance KnownNat z => Field (Fz z) where
 
 
   -- Supports for the hash2Curve function, returns pair of field elements.
+  -- hash2field per Zcash Pasta Curve construction (similar but not idential to the CFRG 
+  -- hash-to-curve specification). Fortuitously, cryptonite sets hash personalization to all 
+  -- zeros, see https://github.com/haskell-crypto/cryptonite/issues/333
   -- hash2Field :: ByteString -> Text -> Text -> (a, a)
-  hash2Field msg domPref curveId = bimap _fromBytes _fromBytes $ _h2f msg domPref curveId
+  hash2Field msg domPref curveId = bimap _fromBytes _fromBytes (digest1, digest2)
+    where
+      prefix = Data.ByteString.replicate 128 0
+      suffix = fromString (domPref ++ "-" ++ curveId ++ "_XMD:BLAKE2b_SSWU_RO_" ++
+               [chr (22 + Prelude.length curveId + Prelude.length domPref)])
+      mkDigest :: ByteString -> ByteString
+      mkDigest x = convert $ hashWith Blake2b_512 x
+      digest0 = mkDigest $ Data.ByteString.concat [prefix, msg, pack [0,0x80,0], suffix]
+      digest1 = mkDigest $ Data.ByteString.concat [digest0, pack [0x01], suffix]
+      mix = xor digest0 digest1 :: ByteString
+      digest2 = mkDigest $ Data.ByteString.concat [mix, pack [0x02], suffix]
 
 
   -- Multiplicative inverse, with 0 mapped to 0.
@@ -217,21 +234,3 @@ _sqrtVt a q s p c = Just result
             r_n = rr * ff `mod` q
             t_n = (tt * _powMod ff 2 q) `mod` q
             c_n = _powMod cc (2^(ss - s_n)) q
-
-
--- hash2field per Zcash Pasta Curve construction (similar but not idential to the CFRG 
--- hash-to-curve specification). Fortuitously, cryptonite sets hash personalization to all 
--- zeros, see https://github.com/haskell-crypto/cryptonite/issues/333
--- _h2f :: message -> domain prefix -> curve ID
-_h2f :: ByteString -> String -> String ->  (ByteString, ByteString)
-_h2f msg domPrefix curveId = (digest1, digest2)
-  where
-    prefix = Data.ByteString.replicate 128 0
-    suffix = fromString (domPrefix ++ "-" ++ curveId ++ "_XMD:BLAKE2b_SSWU_RO_" ++
-             [chr (22 + Prelude.length curveId + Prelude.length domPrefix)])
-    mkDigest :: ByteString -> ByteString
-    mkDigest x = convert $ hashWith Blake2b_512 x
-    digest0 = mkDigest $ Data.ByteString.concat [prefix, msg, pack [0,0x80,0], suffix]
-    digest1 = mkDigest $ Data.ByteString.concat [digest0, pack [0x01], suffix]
-    mix = xor digest0 digest1 :: ByteString
-    digest2 = mkDigest $ Data.ByteString.concat [mix, pack [0x02], suffix]
