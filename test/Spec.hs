@@ -1,8 +1,8 @@
-{-# LANGUAGE OverloadedStrings, Trustworthy, ImportQualifiedPost, NoImplicitPrelude #-}
+{-# LANGUAGE Trustworthy, ImportQualifiedPost, NoImplicitPrelude #-}
 
 module Main (main) where
 
-import Prelude (IO, String, print, ($))
+import Prelude (IO, print, ($))
 import System.Environment (setEnv)
 import Test.Tasty (defaultMain, testGroup)
 import TestFields (fieldProps, testH2Fp)
@@ -13,4 +13,4 @@ main :: IO ()
 main = do
   setEnv "TASTY_QUICKCHECK_TESTS" "1_000"
   defaultMain $ testGroup "\nRunning Tests" [fieldProps, testH2Fp, curveProps, testPOI]
-  print ("wogga!" :: String)
+  print "wogga!"

@@ -2,10 +2,10 @@
 Module      : Crypto.PastaCurves.Curves
 Description : Supports the instantiation of parameterized elliptic curves.
 Copyright   : (c) Eric Schorn, 2022
-License     : MIT
 Maintainer  : eric.schorn@nccgroup.com
 Stability   : experimental
 Portability : GHC
+SPDX-License-Identifier: MIT
 
 This module provides an elliptic curve (multi-use) template with a arbitrary paramaters
 along with a variety of supporting functionality such as point addition, multiplication, 
@@ -31,7 +31,9 @@ data Point (a::Nat) (b::Nat) (baseX::Nat) (baseY::Nat) f =
             | Affine {_ax :: f, _ay :: f}
             | PointAtInfinity deriving stock (Show)
 
+-- TODO: Implement Show in Affine?
 
+-- CPP macro 'helpers' to extract the curve parameters from `Point a b baseX baseY f`
 #define A natVal (Proxy :: Proxy a)
 #define B natVal (Proxy :: Proxy b)
 #define BASE_X natVal (Proxy :: Proxy baseX)
@@ -48,13 +50,15 @@ instance (Field f, KnownNat a, KnownNat b, KnownNat baseX, KnownNat baseY) =>
   (==) pt1 pt2 = toAffine pt1 == toAffine pt2  -- one or both are projective
 
 
+-- | The `CurvePt` class provides the bulk of the functionality related to operations
+-- involving points on an elliptic curve.
 class CurvePt a where
 
   -- | Returns the (constant) base point
   base :: a
   
-  -- | The `fromBytes` function deserializes a point
-  fromBytes :: ByteString -> Maybe a
+  -- | The `fromBytesC` function deserializes a point
+  fromBytesC :: ByteString -> Maybe a
 
   -- | The `negatePt` function negates a point
   negatePt :: a -> a
@@ -62,14 +66,14 @@ class CurvePt a where
   -- | Returns the (constant) neutral point
   neutral :: a
 
-  -- | The `pointAdd` function adds to curve points
+  -- | The `pointAdd` function adds two curve points
   pointAdd :: a -> a -> a
 
   -- | The `toAffine` function converts to an affine representation. Revist: necessary to expose?
   toAffine :: a -> a
 
-  -- | The `toBytes` function serializes a point
-  toBytes :: a -> ByteString
+  -- | The `toBytesC` function serializes a point
+  toBytesC :: a -> ByteString
 
   -- | The `toProjective` function coverts to a projective representation. Revisit: necessary to expose?
   toProjective :: a -> a
@@ -81,18 +85,18 @@ instance (Field f, KnownNat a, KnownNat b, KnownNat baseX, KnownNat baseY) =>
   base = Projective (fromInteger $ BASE_X) (fromInteger $ BASE_Y) 1
 
 
-  fromBytes bytes
+  fromBytesC bytes
     | length bytes == 1 && index bytes 0 == 0 = Just PointAtInfinity
     | length bytes == expLen && (index bytes 0 == 0x2 || index bytes 0 == 0x03) = result
         where
-         expLen = 1 + length (Fields.toBytes (fromInteger (A) :: f))
-         x = Fields.fromBytes (drop 1 bytes) :: Maybe f
+         expLen = 1 + length (toBytesF (fromInteger (A) :: f))
+         x = fromBytesF (drop 1 bytes) :: Maybe f
          sgn0y = if index bytes 0 == 0x02 then 0 else 1::Integer
          alpha = (\t -> t^(3::Integer) + ((fromInteger $ A)::f) * t + ((fromInteger $ B)::f)) <$> x
          beta = alpha >>= sqrt
          y =  (\t -> if sgn0 t == sgn0y then t else negate t) <$> beta
          result = (Affine <$> x <*> y) :: Maybe (Point a b baseX baseY f)
-  fromBytes _ = Nothing
+  fromBytesC _ = Nothing
 
 
   negatePt (Projective x y z) = Projective x (- y) z
@@ -135,11 +139,11 @@ instance (Field f, KnownNat a, KnownNat b, KnownNat baseX, KnownNat baseY) =>
 
 
   -- Compressed; section 2.3.3 on page 10 of https://www.secg.org/sec1-v2.pdf
-  toBytes PointAtInfinity = pack [0]
-  toBytes (Affine x y)
-    | sgn0 y == 0 = cons 0x02 (Fields.toBytes x)
-    | otherwise   = cons 0x03 (Fields.toBytes x)
-  toBytes pt = Curves.toBytes (toAffine pt)
+  toBytesC PointAtInfinity = pack [0]
+  toBytesC (Affine x y)
+    | sgn0 y == 0 = cons 0x02 (toBytesF x)
+    | otherwise   = cons 0x03 (toBytesF x)
+  toBytesC pt = toBytesC (toAffine pt)
 
 
   toProjective (Projective x y z) = Projective x y z
@@ -147,7 +151,15 @@ instance (Field f, KnownNat a, KnownNat b, KnownNat baseX, KnownNat baseY) =>
   toProjective PointAtInfinity = Projective 0 1 0
 
 
+-- | The `Curve` class provides the elliptic point multiplication operation involving
+-- one `CurvePt` point on an elliptic curve and another `Field` field element as the
+-- scalar operand.
 class (CurvePt a, Field b) => Curve a b where
+
+  -- | The `pointMul` function multiplies a field element by a curve point. This, for 
+  -- example, could be a `PastaCurves.Fq` field element scalar with a 
+  -- `PastaCurves.Pallas` elliptic curve point (which happens to use `PastaCurves.Fp` 
+  -- co-ordinates). 
   pointMul :: b -> a -> a
 
 

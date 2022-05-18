@@ -1,22 +1,24 @@
 {-|
 Module      : Crypto.PastaCurves.Fields
-Description : Supports the instantiation of parameterized prime fields.
+Description : Supports the instantiation of parameterized fields.
 Copyright   : (c) Eric Schorn, 2022
-License     : MIT
 Maintainer  : eric.schorn@nccgroup.com
 Stability   : experimental
 Portability : GHC
+SPDX-License-Identifier: MIT
 
-This module provides a Template Haskell splice capable of generating a prime field of 
-arbitrary modulus along with a variety of supporting functionality such as multiplicative
-inverse, square testing, square root, serialization and deserialization, and hash2Field.
-The algorithms are not constant time.
+This module provides a (multi-use) field element template with an arbitrary modulus along
+with a variety of supporting functionality such as basic arithmetic, multiplicative 
+inverse, square testing, square root, serialization and deserialization, and hash2Field. 
+The algorithms are NOT constant time.
 -}
 
 {-# LANGUAGE CPP, DataKinds, DerivingStrategies, KindSignatures, NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables, Trustworthy #-}
 
+
 module Fields (Field(..), Fz(..)) where
+
 
 import Prelude
 import Crypto.Hash (Blake2b_512 (Blake2b_512), hashWith)
@@ -31,8 +33,7 @@ import GHC.Word (Word8)
 import GHC.TypeLits (KnownNat, Nat, natVal)
 
 
--- | The `Fz z` (template) type holds a field element with a parameterized modulus of 
--- `z`; Note that the constructor is not itself exported.
+-- | The `Fz (z::Nat)` field element (template) type includes a parameterized modulus of @z@.
 newtype Fz (z::Nat) = Fz Integer deriving stock (Eq)
 
 
@@ -40,7 +41,7 @@ newtype Fz (z::Nat) = Fz Integer deriving stock (Eq)
 #define MOD natVal (Proxy :: Proxy z)
 
 
--- | The `Fz z` type is an instance of the `Num` class.
+-- | The `Fz` type is an instance of the `Num` class.
 instance KnownNat z => Num (Fz z) where
 
   fromInteger a = Fz $ a `mod` MOD
@@ -56,7 +57,7 @@ instance KnownNat z => Num (Fz z) where
   signum = error "signum: not implemented"
 
 
--- | The `Fz z` type is an instance of the `Show` class written in hexadecimal.
+-- | The `Fz` type is an instance of the `Show` class written in hexadecimal.
 instance KnownNat z => Show (Fz z) where
 
   show (Fz a) = "0x" ++ ["0123456789ABCDEF" !! nibble n | n <- [e, e-1..0]]
@@ -69,17 +70,17 @@ instance KnownNat z => Show (Fz z) where
 -- | The `Field` class provides useful support functionality for field elements.
 class (Num a, Eq a) => Field a where
 
-  -- | The `fromBytes` function is the primary deserialization constructor which 
+  -- | The `fromBytesF` function is the primary deserialization constructor which 
   -- consumes a big-endian `ByteString` sized to minimally contain the modulus 
   -- and returns a field element. The deserialized integer must already be properly 
   -- reduced to reside within [0..modulus).
-  fromBytes :: ByteString  -> Maybe a
+  fromBytesF :: ByteString  -> Maybe a
 
-  -- | The `_fromBytes` function is the secondary deserialization constructor which
+  -- | The `_fromBytesF` function is the secondary deserialization constructor which
   -- consumes an unconstrained big-endian `ByteString` and returns a internally 
   -- reduced field element. This function is useful for random testing and 
   -- hash2Field-style funtions.
-  _fromBytes :: ByteString -> a
+  _fromBytesF :: ByteString -> a
 
   -- | The `hash2Field` function provides intermediate functionality that is suitable
   -- for ultimately supporting the `Curves.hash2Curve` function. This function 
@@ -106,21 +107,21 @@ class (Num a, Eq a) => Field a where
   -- is not prime, etc).
   sqrt :: a -> Maybe a
 
-  -- | The `toBytes` function serializes an element into a big-endian `ByteString` 
+  -- | The `toBytesF` function serializes an element into a big-endian `ByteString` 
   -- sized to minimal contain the modulus.
-  toBytes :: a -> ByteString
+  toBytesF :: a -> ByteString
 
   -- | The `toI` function returns the field element as a properly reduced Integer.
   toI :: a -> Integer
 
 
--- | The `Fz p` type is an instance of the `Field` class. These functions are largely 
+-- | The `Fz z` type is an instance of the `Field` class. These functions are largely 
 -- simple adapters to the more generic internal functions implemented further below.
 instance KnownNat z => Field (Fz z) where
 
   -- Validated deserialization, returns a Maybe field element.
   -- fromBytes :: ByteString  -> Maybe a
-  fromBytes bytes | Data.ByteArray.length bytes /= expLen || integer >= MOD = Nothing
+  fromBytesF bytes | Data.ByteArray.length bytes /= expLen || integer >= MOD = Nothing
                   | otherwise = Just $ fromInteger integer
     where
       expLen = (7 + until ((MOD <) . (2^)) (+1) 0) `div` 8 :: Int
@@ -129,15 +130,15 @@ instance KnownNat z => Field (Fz z) where
 
   -- Unvalidated deserialization, returns reduced field element.
   -- _fromBytes :: ByteString -> a
-  _fromBytes bytes = fromInteger $ foldl' (\a b -> a `shiftL` 8 .|. fromIntegral b) 0 bytes
+  _fromBytesF bytes = fromInteger $ foldl' (\a b -> shiftL a 8 .|. fromIntegral b) 0 bytes
 
 
   -- Supports for the hash2Curve function, returns pair of field elements.
   -- hash2field per Zcash Pasta Curve construction (similar but not idential to the CFRG 
-  -- hash-to-curve specification). Fortuitously, cryptonite sets hash personalization to all 
-  -- zeros, see https://github.com/haskell-crypto/cryptonite/issues/333
-  -- hash2Field :: ByteString -> Text -> Text -> (a, a)
-  hash2Field msg domPref curveId = bimap _fromBytes _fromBytes (digest1, digest2)
+  -- hash-to-curve specification). Fortuitously, cryptonite sets hash personalization to 
+  -- all zeros, see https://github.com/haskell-crypto/cryptonite/issues/333
+  -- hash2Field :: ByteString -> String -> String -> (a, a)
+  hash2Field msg domPref curveId = bimap _fromBytesF _fromBytesF (digest1, digest2)
     where
       prefix = Data.ByteString.replicate 128 0
       suffix = fromString (domPref ++ "-" ++ curveId ++ "_XMD:BLAKE2b_SSWU_RO_" ++
@@ -152,7 +153,7 @@ instance KnownNat z => Field (Fz z) where
 
   -- Multiplicative inverse, with 0 mapped to 0.
   -- inv0 :: a -> a
-  inv0 (Fz a) = fromInteger $ _powMod a (MOD - 2) (MOD)
+  inv0 (Fz a) = Fz $ _powMod a (MOD - 2) (MOD)
 
 
   -- Determines if the operand has a square root.
@@ -165,9 +166,9 @@ instance KnownNat z => Field (Fz z) where
   sgn0 (Fz a) = a `mod` 2
 
 
-  -- Diveds the element by 2
+  -- Shift right by 1 (divides the element by 2, toss remainder)
   -- shiftR1 :: a -> a
-  shiftR1 (Fz a) = Fz (a `div` 2)
+  shiftR1 (Fz a) = Fz $ a `div` 2
 
 
   -- Returns square root as Maybe field element. If problems, returns Nothing.
@@ -177,15 +178,15 @@ instance KnownNat z => Field (Fz z) where
       s = until ((/= 0) . ((MOD -1) `rem`) . (2^)) (+1) 0 - 1 :: Integer
       p = (MOD - 1) `div` (2^s)
       z = head ([x | x <- [1..], not (_isSqr x (MOD))] ++ [0]) -- 1st non-square
-      c = _powMod z p (MOD)  -- 'fountain of fixes'
+      c = _powMod z p (MOD)  -- \'fountain of fixes\'
 
 
   -- Deserialization.
-  -- toBytes :: a -> ByteString
-  toBytes (Fz a) = pack $ reverse res
+  -- toBytesF :: a -> ByteString
+  toBytesF (Fz a) = pack $ reverse res
     where
-      expLen = (7 + until ((MOD <) . (2^)) (+1) 0) `div` 8 :: Integer
-      res = [fromIntegral (shiftR a (8*b)) | b <- [0..(fromIntegral expLen - 1)]] :: [Word8]
+      expLen = fromInteger $ (7 + until ((MOD <) . (2^)) (+1) 0) `div` 8 :: Int
+      res = [fromIntegral (shiftR a (8*b)) | b <- [0..(expLen - 1)]] :: [Word8]
 
 
   -- Returns the element as an Integer
@@ -213,7 +214,7 @@ _isSqr a q = (legendreSymbol == 0) || (legendreSymbol == 1)
 
 
 -- | Variable-time Tonelli-Shanks algorithm
--- _sqrtVt :: operand -> modulus -> 's' -> 'p' -> nonSquare
+-- _sqrtVt :: operand -> modulus -> \'s\' -> \'p\' -> nonSquare
 _sqrtVt :: Integer -> Integer -> Integer -> Integer -> Integer -> Maybe Integer
 _sqrtVt 0 _ _ _ _ = Just 0
 _sqrtVt a q _ _ _ | not (_isSqr a q) = Nothing
@@ -229,7 +230,7 @@ _sqrtVt a q s p c = Just result
         loopy  1 rr  _  _ = rr
         loopy tt rr cc ss = loopy t_n r_n c_n s_n
           where
-            s_n = head ([i | i <- [1..(ss - 1)], _powMod tt (2^i) q == 1] ++ [0]) :: Integer
+            s_n = head ([i | i <- [1..(ss - 1)], _powMod tt (2^i) q == 1] ++ [0])
             ff = _powMod cc (2^(ss - s_n - 1)) q
             r_n = rr * ff `mod` q
             t_n = (tt * _powMod ff 2 q) `mod` q

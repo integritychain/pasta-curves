@@ -1,64 +1,55 @@
-{-# LANGUAGE DataKinds, FlexibleInstances, NoImplicitPrelude, OverloadedStrings, TemplateHaskell, Trustworthy, ImportQualifiedPost #-}
+{-# LANGUAGE DataKinds, FlexibleInstances, NoImplicitPrelude, OverloadedStrings, Trustworthy, ImportQualifiedPost #-}
 {-# OPTIONS_GHC -Wno-orphans -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 
 module TestFields (fieldProps, testH2Fp) where
 
-import Prelude
-import Data.ByteString qualified as DBS
-import Data.Maybe qualified as DM
-import Test.Tasty qualified as TT
-import Test.Tasty.HUnit qualified as TTHU
-import Test.Tasty.QuickCheck qualified as TTQC
-
-import Fields qualified as F
-import Constants qualified as C
+import Prelude hiding (sqrt)
 import Control.Monad (replicateM)
+import Data.ByteString (ByteString, pack)
+import Data.Maybe (fromJust)
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (assertBool, testCase)
+import Test.Tasty.QuickCheck (Arbitrary(..), choose, testProperty)
+
+import PastaCurves
+import Constants
 
 
--- type Fp = $(F.primeField C.pallasPrime)
--- type Fq = $(F.primeField C.vestaPrime)
-type Fp  = F.Fz 0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001
--- type Fp = $(primeField pallasPrime)
-
-type Fq = F.Fz 0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001
---type Fq = $(primeField vestaPrime)
-
-
-instance TTQC.Arbitrary Fp where  --  $(F.primeField C.pallasPrime) where
+instance Arbitrary Fp where
    arbitrary = do
-     fromInteger <$> TTQC.choose (0, C.pallasPrime - 1)
+     fromInteger <$> choose (0, pallasPrime - 1)
 
 
-instance TTQC.Arbitrary Fq where  --   $(F.primeField C.vestaPrime) where
+instance Arbitrary Fq where
    arbitrary = do
-     fromInteger <$> TTQC.choose (0, C.vestaPrime - 1)
+     fromInteger <$> choose (0, vestaPrime - 1)
 
-type Serdes = DBS.ByteString
+type Serdes = ByteString
 
-instance TTQC.Arbitrary Serdes where
-  arbitrary = DBS.pack <$> replicateM 32 TTQC.arbitrary
+instance Arbitrary Serdes where
+  arbitrary = pack <$> replicateM 32 arbitrary
 
 
-fieldProps :: TT.TestTree
-fieldProps = TT.testGroup "Testing Field properties via QuickCheck" [
-  TTQC.testProperty "Fp arith"  $ \a b c -> a*(b-c) - a*b + a*c == (0 :: Fp),
-  TTQC.testProperty "Fp inv0"   $ \a -> a * F.inv0 a == (1 :: Fp),
-  TTQC.testProperty "Fp sqrt"   $ \a -> DM.fromJust (F.sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer) :: Fp),
-  TTQC.testProperty "Fp serdes" $ \a -> DM.fromJust (F.fromBytes  (F.toBytes (F._fromBytes a ::
-       Fp))) == (F._fromBytes a :: Fp),
+fieldProps :: TestTree
+fieldProps = testGroup "Testing Field properties via QuickCheck" [
+  testProperty "Fp arith"  $ \a b c -> a*(b-c) - a*b + a*c == (0 :: Fp),
+  testProperty "Fp inv0"   $ \a -> a * inv0 a == (1 :: Fp),
+  testProperty "Fp sqrt"   $ \a -> fromJust (sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer) :: Fp),
+  testProperty "Fp serdes" $ \a -> fromJust (fromBytesF  (toBytesF (_fromBytesF a ::
+       Fp))) == (_fromBytesF a :: Fp),
 
-  TTQC.testProperty "Fq arith"  $ \a b c -> a*(b-c) - a*b + a*c == (0 :: Fq),
-  TTQC.testProperty "Fq inv0"   $ \a -> a * F.inv0 a == (1 :: Fq),
-  TTQC.testProperty "Fq sqrt"   $ \a -> DM.fromJust (F.sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer)  :: Fq),
-  TTQC.testProperty "Fq serdes" $ \a -> DM.fromJust (F.fromBytes  (F.toBytes (F._fromBytes a ::
-       Fq))) == (F._fromBytes a :: Fq)
+  testProperty "Fq arith"  $ \a b c -> a*(b-c) - a*b + a*c == (0 :: Fq),
+  testProperty "Fq inv0"   $ \a -> a * inv0 a == (1 :: Fq),
+  testProperty "Fq sqrt"   $ \a -> fromJust (sqrt (a*a))^(2 :: Integer) == (a^(2 :: Integer)  :: Fq),
+  testProperty "Fq serdes" $ \a -> fromJust (fromBytesF  (toBytesF (_fromBytesF a ::
+       Fq))) == (_fromBytesF a :: Fq)
   ]
 
-testH2Fp :: TT.TestTree
-testH2Fp = TTHU.testCase "testH2Fp" $ TTHU.assertBool "Failed H2Fp" helper
+testH2Fp :: TestTree
+testH2Fp = testCase "testH2Fp" $ assertBool "Failed H2Fp" helper
   where
-    (r1, r2) = F.hash2Field (DBS.pack [4,5,6]) "\x01\x02" "pallas" :: (Fp, Fp)
+    (r1, r2) = hash2Field (pack [4,5,6]) "\x01\x02" "pallas" :: (Fp, Fp)
     e1 = 0x2479644355b8886ebd8b5d6e15ef5e0918e67ab56f830ef65fcfa9826c66ad35 :: Fp
     e2 = 0x1977de721cac345d07f9f9b954deab2ce4ed43fab979d78f695980cd188fbace :: Fp
     helper = (r1 == e1) && (r2 == e2)
