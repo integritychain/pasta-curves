@@ -1,4 +1,4 @@
-{-# LANGUAGE Trustworthy, ImportQualifiedPost, NoImplicitPrelude #-}
+{-# LANGUAGE Trustworthy, NoImplicitPrelude #-}
 
 module Main (main) where
 
