@@ -10,4 +10,3 @@ main :: IO ()
 main = do
   print ("Executable for " :: String)
   print PC.projectName
-  print PC.pTestTemp
