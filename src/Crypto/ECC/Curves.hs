@@ -7,16 +7,14 @@ Stability   : experimental
 Portability : GHC
 SPDX-License-Identifier: MIT
 
-This module provides an elliptic curve (multi-use) template with a arbitrary paramaters
-along with a variety of supporting functionality such as point addition, multiplication, 
-negation, serialization and deserialization. The algorithms are NOT constant time.
+This internal module provides an elliptic curve (multi-use) template with a arbitrary
+paramaters along with a variety of supporting functionality such as point addition, 
+multiplication,  negation, serialization and deserialization. The algorithms are NOT 
+constant time.
 -}
-
--- TODO: Finish hash to curve implenentation!
 
 {-# LANGUAGE CPP, DataKinds, DerivingStrategies, FlexibleInstances, PolyKinds #-}
 {-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, ScopedTypeVariables, Safe #-}
-{-# LANGUAGE InstanceSigs #-}
 
 module Curves (Curve(..), CurvePt(..), Point(..)) where
 
@@ -33,7 +31,6 @@ data Point (a::Nat) (b::Nat) (baseX::Nat) (baseY::Nat) f =
             | Affine {_ax :: f, _ay :: f}
             | PointAtInfinity deriving stock (Show)
 
--- TODO: Implement Show in Affine?
 
 -- CPP macro 'helpers' to extract the curve parameters from `Point a b baseX baseY f`
 #define A natVal (Proxy :: Proxy a)
@@ -184,8 +181,9 @@ instance (Field f1, Field f2, KnownNat a, KnownNat b, KnownNat baseX, KnownNat b
         where
           doublePt = pointAdd p1 p1
 
+
   -- mapToCurveSimpleSwu :: f -> Point a b baseX baseY f
-  -- z from https://github.com/eschorn1/zero11/blob/master/curves.py#L172
+  -- z from https://github.com/eschorn1/zero11/blob/master/curves.py#L172 ;; this is Pasta-specific
   mapToCurveSimpleSwu fu = if A * B /= 0 then result else error "curve params A*B must not be zero"
     where
       u = (fromInteger $ toI fu)  :: f1

@@ -1,5 +1,18 @@
-{-# LANGUAGE NoImplicitPrelude, Safe #-}
-{-# LANGUAGE DataKinds #-}
+{-|
+Module      : Crypto.PastaCurves.Pasta
+Description : Pasta-specific instantiation of parameterized curves and fields.
+Copyright   : (c) Eric Schorn, 2022
+Maintainer  : eric.schorn@nccgroup.com
+Stability   : experimental
+Portability : GHC
+SPDX-License-Identifier: MIT
+
+This internal module instantiates the specific curves and fields specific to Pasta. It
+also includes `hashToPallas` and `hashToVesta` functionality (which in turn includes
+two isogenous curves, mapping functionality, and coefficient vectors).
+-}
+
+{-# LANGUAGE DataKinds, NoImplicitPrelude, Safe #-}
 
 module Pasta (Fp, Fq, Pallas, Vesta, Curve(..), CurvePt(..), Field(..), hashToPallas, 
   hashToVesta, pallasPrime, vestaPrime) where
@@ -46,20 +59,18 @@ type IsoPallas = (Point 0x18354a2eb0ea8c9c49be2d7258370742b74134581a27a59f92bb4b
 type IsoVesta = (Point 0x267f9b2ee592271a81639c4d96f787739673928c7d01b212c515ad7242eaa6b1 1265 0 0 Fq)
 
 
--- | Doc for `hashToPallas` goes here
+-- | The `hashToPallas` function takes an arbitrary `ByteString` and maps it to a valid 
+-- point on the Pallas elliptic curve (of unknown related to the base point).
 hashToPallas :: ByteString -> Pallas
 hashToPallas msg = result 
   where
-    -- msg =  fromString "Trans rights now!" :: ByteString
-    domPref = "z.cash:test"
-    curveId = "pallas"
-    (fe0, fe1) = hash2Field msg domPref curveId :: (Fp, Fp)
+    (fe0, fe1) = hash2Field msg "z.cash:test" "pallas" :: (Fp, Fp)
     q0 = mapToCurveSimpleSwu fe0 :: IsoPallas
     q1 = mapToCurveSimpleSwu fe1 :: IsoPallas
     r = toAffine $ pointAdd q0 q1 :: IsoPallas
     (x, y) = case r of
       (Affine xx yy) -> (xx, yy)
-      _ -> error "hashToPallas "
+      _ -> error "hashToPallas: non-Affine should be impossible; point at infinity?"
     xTop = head isoPallasVecs * x^(3::Integer) + isoPallasVecs !! 1 * x^(2::Integer) + isoPallasVecs !! 2 * x + isoPallasVecs !! 3
     xBot = x^(2::Integer) + isoPallasVecs !! 4 * x + isoPallasVecs !! 5
     yTop = isoPallasVecs !! 6 * x^(3::Integer) + isoPallasVecs !! 7 * x^(2::Integer) + isoPallasVecs !! 8 * x + isoPallasVecs !! 9
@@ -67,20 +78,18 @@ hashToPallas msg = result
     result = Projective (xTop * inv0 xBot) (y * yTop * inv0 yBot) 1 :: Pallas
 
 
--- | Doc for `hashToVesta` goes here
+-- | The `hashToVesta` function takes an arbitrary `ByteString` and maps it to a valid 
+-- point on the Vesta elliptic curve (of unknown related to the base point).
 hashToVesta :: ByteString -> Vesta
 hashToVesta msg = result 
   where
-    -- msg =  fromString "Trans rights now!" :: ByteString
-    domPref = "z.cash:test"
-    curveId = "vesta"
-    (fe0, fe1) = hash2Field msg domPref curveId :: (Fq, Fq)
+    (fe0, fe1) = hash2Field msg "z.cash:test" "vesta" :: (Fq, Fq)
     q0 = mapToCurveSimpleSwu fe0 :: IsoVesta
     q1 = mapToCurveSimpleSwu fe1 :: IsoVesta
     r = toAffine $ pointAdd q0 q1 :: IsoVesta
     (x, y) = case r of
       (Affine xx yy) -> (xx, yy)
-      _ -> error "hashToVesta "
+      _ -> error "hashToVesta: non-Affine should be impossible; point at infinity?"
     xTop = head isoVestaVecs * x^(3::Integer) + isoVestaVecs !! 1 * x^(2::Integer) + isoVestaVecs !! 2 * x + isoVestaVecs !! 3
     xBot = x^(2::Integer) + isoVestaVecs !! 4 * x + isoVestaVecs !! 5
     yTop = isoVestaVecs !! 6 * x^(3::Integer) + isoVestaVecs !! 7 * x^(2::Integer) + isoVestaVecs !! 8 * x + isoVestaVecs !! 9
@@ -88,15 +97,17 @@ hashToVesta msg = result
     result = Projective (xTop * inv0 xBot) (y * yTop * inv0 yBot) 1 :: Vesta
 
 
--- | pallas field modulus https://neuromancer.sk/std/other/Pallas
+-- | The Pallas field modulus https://neuromancer.sk/std/other/Pallas
 pallasPrime :: Integer
 pallasPrime = 0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001
 
 
--- | vesta field modulus https://neuromancer.sk/std/other/Vesta
+-- | The Vesta field modulus https://neuromancer.sk/std/other/Vesta
 vestaPrime :: Integer
 vestaPrime = 0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001
 
+
+-- Vectors to map isogenous curve (with a*b != 0) point to Pallas
 -- See https://github.com/zcash/pasta_curves/blob/21fd9e2c1bbd2d049bfe95588d77cb884e9f93ab/src/curves.rs#L1017-L1096
 isoPallasVecs :: [Fp]
 isoPallasVecs = [
@@ -115,6 +126,8 @@ isoPallasVecs = [
   0x40000000000000000000000000000000224698fc094cf91b992d30ecfffffde5]
 
 
+-- Vectors to map isogenous curve (with a*b != 0) point to Vesta
+-- Curve isogenous to Vesta, with a*b != 0
 -- See https://github.com/zcash/pasta_curves/blob/21fd9e2c1bbd2d049bfe95588d77cb884e9f93ab/src/curves.rs#L1117-L1196
 isoVestaVecs :: [Fq]
 isoVestaVecs = [

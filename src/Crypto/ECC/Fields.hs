@@ -7,18 +7,16 @@ Stability   : experimental
 Portability : GHC
 SPDX-License-Identifier: MIT
 
-This module provides a (multi-use) field element template with an arbitrary modulus along
-with a variety of supporting functionality such as basic arithmetic, multiplicative 
-inverse, square testing, square root, serialization and deserialization, and hash2Field. 
-The algorithms are NOT constant time.
+This internal module provides a (multi-use) field element template with an arbitrary 
+modulus along with a variety of supporting functionality such as basic arithmetic, 
+multiplicative  inverse, square testing, square root, serialization and deserialization,
+and hash2Field. The algorithms are NOT constant time.
 -}
 
 {-# LANGUAGE CPP, DataKinds, DerivingStrategies, KindSignatures, NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables, Trustworthy #-}
 
-
 module Fields (Field(..), Fz(..)) where
-
 
 import Prelude
 import Crypto.Hash (Blake2b_512 (Blake2b_512), hashWith)

@@ -4,16 +4,14 @@
 module TestCurves (curveProps, testPOI, testHashToPallas, testHashToVesta) where
 
 import Prelude hiding (exp)
+import Data.ByteString.UTF8 (fromString)
 import Data.ByteString (pack)
 import Data.Maybe (fromJust)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck (Arbitrary(..), testProperty)
 import Test.Tasty.HUnit (assertBool, testCase)
-
-import PastaCurves
-import Fields ()
 import TestFields ()
-import Data.ByteString.UTF8 (fromString)
+import PastaCurves
 import Curves (Point(Affine))
 
 
