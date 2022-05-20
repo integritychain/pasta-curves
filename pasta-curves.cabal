@@ -32,7 +32,7 @@ common common-options
                        cryptonite >= 0.29,
                        memory >= 0.16,
                        bytestring >= 0.10
-  other-modules:       Fields, Constants, Curves
+  other-modules:       Curves, Fields, Pasta
 
   ghc-options:         -Weverything
                        -Wno-missing-import-lists

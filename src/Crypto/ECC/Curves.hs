@@ -16,14 +16,16 @@ negation, serialization and deserialization. The algorithms are NOT constant tim
 
 {-# LANGUAGE CPP, DataKinds, DerivingStrategies, FlexibleInstances, PolyKinds #-}
 {-# LANGUAGE MultiParamTypeClasses, NoImplicitPrelude, ScopedTypeVariables, Safe #-}
+{-# LANGUAGE InstanceSigs #-}
 
-module Curves (Curve(..), CurvePt(..), Point) where
+module Curves (Curve(..), CurvePt(..), Point(..)) where
 
 import Prelude hiding (drop, length, sqrt)
 import Data.ByteString (ByteString, cons, drop, index, length, pack)
 import Data.Typeable (Proxy (Proxy))
 import GHC.TypeLits (Nat, natVal, KnownNat)
 import Fields (Field (..))
+import Data.Maybe (fromJust)
 
 
 data Point (a::Nat) (b::Nat) (baseX::Nat) (baseY::Nat) f =
@@ -162,6 +164,9 @@ class (CurvePt a, Field b) => Curve a b where
   -- co-ordinates). 
   pointMul :: b -> a -> a
 
+  mapToCurveSimpleSwu :: b -> a
+
+
 
 instance (Field f1, Field f2, KnownNat a, KnownNat b, KnownNat baseX, KnownNat baseY) => 
   Curve (Point a b baseX baseY f1) f2 where
@@ -178,3 +183,20 @@ instance (Field f1, Field f2, KnownNat a, KnownNat b, KnownNat baseX, KnownNat b
         | otherwise = error "pointMul' pattern match fail (should never happen)"
         where
           doublePt = pointAdd p1 p1
+
+  -- mapToCurveSimpleSwu :: f -> Point a b baseX baseY f
+  -- z from https://github.com/eschorn1/zero11/blob/master/curves.py#L172
+  mapToCurveSimpleSwu fu = if A * B /= 0 then result else error "curve params A*B must not be zero"
+    where
+      u = (fromInteger $ toI fu)  :: f1
+      z = fromInteger (-13) :: f1
+      -- See https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-13.html#section-6.6.2-7
+      tv1 = inv0 (z^(2::Integer) * u^(4::Integer) + z * u^(2::Integer))
+      x1a = (fromInteger ((-1) * B) * inv0 (fromInteger (A))) * (1 + tv1) :: f1
+      x1 = if toI tv1 == 0 then fromInteger (B) * inv0 (z * fromInteger (A))  else x1a :: f1 
+      gx1 = x1^(3::Integer) + fromInteger (A) * x1 + fromInteger (B) :: f1
+      x2 = z * u^(2::Integer) * x1 :: f1
+      gx2 = x2^(3::Integer) + fromInteger (A) * x2 + fromInteger (B) :: f1
+      (x, ya) = if isSqr gx1 then (x1, fromJust $ sqrt gx1) else (x2, fromJust $ sqrt gx2) :: (f1, f1)
+      y = if sgn0 u /= sgn0 ya then -ya else ya :: f1
+      result = Projective x y 1 :: Point a b baseX baseY f1

@@ -2,18 +2,16 @@
 {-# OPTIONS_GHC -Wno-orphans -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 
-module TestFields (fieldProps, testH2Fp) where
+module TestFields (fieldProps) where
 
 import Prelude hiding (sqrt)
 import Control.Monad (replicateM)
 import Data.ByteString (ByteString, pack)
 import Data.Maybe (fromJust)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertBool, testCase)
 import Test.Tasty.QuickCheck (Arbitrary(..), choose, testProperty)
 
 import PastaCurves
-import Constants
 
 
 instance Arbitrary Fp where
@@ -45,11 +43,3 @@ fieldProps = testGroup "Testing Field properties via QuickCheck" [
   testProperty "Fq serdes" $ \a -> fromJust (fromBytesF  (toBytesF (_fromBytesF a ::
        Fq))) == (_fromBytesF a :: Fq)
   ]
-
-testH2Fp :: TestTree
-testH2Fp = testCase "testH2Fp" $ assertBool "Failed H2Fp" helper
-  where
-    (r1, r2) = hash2Field (pack [4,5,6]) "\x01\x02" "pallas" :: (Fp, Fp)
-    e1 = 0x2479644355b8886ebd8b5d6e15ef5e0918e67ab56f830ef65fcfa9826c66ad35 :: Fp
-    e2 = 0x1977de721cac345d07f9f9b954deab2ce4ed43fab979d78f695980cd188fbace :: Fp
-    helper = (r1 == e1) && (r2 == e2)
