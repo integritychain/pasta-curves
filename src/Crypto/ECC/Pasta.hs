@@ -14,7 +14,7 @@ two isogenous curves, mapping functionality, and coefficient vectors).
 
 {-# LANGUAGE DataKinds, NoImplicitPrelude, Safe #-}
 
-module Pasta (Fp, Fq, Pallas, Vesta, Curve(..), CurvePt(..), Field(..), hashToPallas, 
+module Pasta (Fp, Fq, Num(..), Pallas, Vesta, Curve(..), CurvePt(..), Field(..), hashToPallas, 
   hashToVesta, pallasPrime, vestaPrime) where
 
 import Prelude

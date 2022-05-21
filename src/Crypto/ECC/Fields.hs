@@ -16,7 +16,7 @@ and hash2Field. The algorithms are NOT constant time.
 {-# LANGUAGE CPP, DataKinds, DerivingStrategies, KindSignatures, NoImplicitPrelude #-}
 {-# LANGUAGE ScopedTypeVariables, Trustworthy #-}
 
-module Fields (Field(..), Fz(..)) where
+module Fields (Field(..), Fz(..), Num(..)) where
 
 import Prelude
 import Crypto.Hash (Blake2b_512 (Blake2b_512), hashWith)
