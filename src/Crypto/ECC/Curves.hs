@@ -24,6 +24,7 @@ import Data.Typeable (Proxy (Proxy))
 import GHC.TypeLits (Nat, natVal, KnownNat)
 import Fields (Field (..))
 import Data.Maybe (fromJust)
+import Control.Monad (mfilter)
 
 
 data Point (a::Nat) (b::Nat) (baseX::Nat) (baseY::Nat) f =
@@ -50,7 +51,8 @@ instance (Field f, KnownNat a, KnownNat b, KnownNat baseX, KnownNat baseY) =>
 
 
 -- | The `CurvePt` class provides the bulk of the functionality related to operations
--- involving points on an elliptic curve.
+-- involving points on an elliptic curve. It supports both the Pallas and Vesta curve
+-- point type.
 class CurvePt a where
 
   -- | Returns the (constant) base point
@@ -58,6 +60,11 @@ class CurvePt a where
   
   -- | The `fromBytesC` function deserializes a point
   fromBytesC :: ByteString -> Maybe a
+
+  -- | The `isOnCurve` function validates whether the point is on the curve. It is 
+  -- already utilized within `toBytesC` deserialization and within hash-to-curve (for
+  -- redundant safety).
+  isOnCurve :: a -> Bool
 
   -- | The `negatePt` function negates a point
   negatePt :: a -> a
@@ -94,8 +101,14 @@ instance (Field f, KnownNat a, KnownNat b, KnownNat baseX, KnownNat baseY) =>
          alpha = (\t -> t^(3::Integer) + ((fromInteger $ A)::f) * t + ((fromInteger $ B)::f)) <$> x
          beta = alpha >>= sqrt
          y =  (\t -> if sgn0 t == sgn0y then t else negate t) <$> beta
-         result = (Affine <$> x <*> y) :: Maybe (Point a b baseX baseY f)
+         proposed = (Affine <$> x <*> y) :: Maybe (Point a b baseX baseY f)
+         result = mfilter isOnCurve proposed :: Maybe (Point a b baseX baseY f)
   fromBytesC _ = Nothing
+
+
+  isOnCurve PointAtInfinity = True
+  isOnCurve (Affine x y) = y^(2::Integer) == x^(3::Integer) + fromInteger (A) * x + fromInteger (B)
+  isOnCurve pt = isOnCurve $ toAffine pt
 
 
   negatePt (Projective x y z) = Projective x (- y) z
@@ -152,7 +165,7 @@ instance (Field f, KnownNat a, KnownNat b, KnownNat baseX, KnownNat baseY) =>
 
 -- | The `Curve` class provides the elliptic point multiplication operation involving
 -- one `CurvePt` point on an elliptic curve and another `Field` field element as the
--- scalar operand.
+-- scalar operand. It supports both the Pallas and Vesta curve point type.
 class (CurvePt a, Field b) => Curve a b where
 
   -- | The `pointMul` function multiplies a field element by a curve point. This, for 
@@ -162,7 +175,6 @@ class (CurvePt a, Field b) => Curve a b where
   pointMul :: b -> a -> a
 
   mapToCurveSimpleSwu :: b -> a
-
 
 
 instance (Field f1, Field f2, KnownNat a, KnownNat b, KnownNat baseX, KnownNat baseY) => 

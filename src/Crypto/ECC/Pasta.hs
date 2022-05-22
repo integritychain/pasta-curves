@@ -33,7 +33,8 @@ type Fp  = Fz 0x40000000000000000000000000000000224698fc094cf91b992d30ed00000001
 -- | `Pallas` represents a point on the Pallas elliptic curve using `Fp` coordinates.
 -- The curve was designed to have the some order as the `Fq` element\'s modulus. It is
 -- a type synonym for the internal `Curves.Point` type, parameterized with the curve\s 
--- @a@ and @b@ values and the affine base point as @base_x@ and @base_y@.
+-- @a@ and @b@ values and the affine base point as @base_x@ and @base_y@. The underlying
+-- point is of type @Point a b base_x base_y field@.
 type Pallas = (Point 0 5 1 0x248b4a5cf5ed6c83ac20560f9c8711ab92e13d27d60fb1aa7f5db6c93512d546 Fp)
 
 
@@ -47,7 +48,8 @@ type Fq = Fz 0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001
 -- | `Vesta` represents a point on the Vesta elliptic curve using `Fq` coordinates.
 -- The curve was designed to have the some order as the `Fp` element\'s modulus.  It is
 -- a type synonym for the internal `Curves.Point` type, parameterized with the curve\s 
--- @a@ and @b@ values and the affine base point as @base_x@ and @base_y@.
+-- @a@ and @b@ values and the affine base point as @base_x@ and @base_y@.  The underlying
+-- point is of type @Point a b base_x base_y field@.
 type Vesta  = (Point 0 5 1 0x26bc999156dd5194ec49b1c551768ab375785e7ce00906d13e0361674fd8959f Fq)
 
 
@@ -75,7 +77,8 @@ hashToPallas msg = result
     xBot = x^(2::Integer) + isoPallasVecs !! 4 * x + isoPallasVecs !! 5
     yTop = isoPallasVecs !! 6 * x^(3::Integer) + isoPallasVecs !! 7 * x^(2::Integer) + isoPallasVecs !! 8 * x + isoPallasVecs !! 9
     yBot = x^(3::Integer) + isoPallasVecs !! 10 * x^(2::Integer) + isoPallasVecs !! 11 * x + isoPallasVecs !! 12 
-    result = Projective (xTop * inv0 xBot) (y * yTop * inv0 yBot) 1 :: Pallas
+    proposed = Projective (xTop * inv0 xBot) (y * yTop * inv0 yBot) 1 :: Pallas
+    result = if isOnCurve proposed then proposed else error "hashed to Pallas non-point"
 
 
 -- | The `hashToVesta` function takes an arbitrary `ByteString` and maps it to a valid 
@@ -94,7 +97,8 @@ hashToVesta msg = result
     xBot = x^(2::Integer) + isoVestaVecs !! 4 * x + isoVestaVecs !! 5
     yTop = isoVestaVecs !! 6 * x^(3::Integer) + isoVestaVecs !! 7 * x^(2::Integer) + isoVestaVecs !! 8 * x + isoVestaVecs !! 9
     yBot = x^(3::Integer) + isoVestaVecs !! 10 * x^(2::Integer) + isoVestaVecs !! 11 * x + isoVestaVecs !! 12 
-    result = Projective (xTop * inv0 xBot) (y * yTop * inv0 yBot) 1 :: Vesta
+    proposed = Projective (xTop * inv0 xBot) (y * yTop * inv0 yBot) 1 :: Vesta
+    result = if isOnCurve proposed then proposed else error "hashed to Vesta non-point"
 
 
 -- | The Pallas field modulus https://neuromancer.sk/std/other/Pallas
